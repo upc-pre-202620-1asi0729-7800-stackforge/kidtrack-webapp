@@ -1,10 +1,126 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+<div class="parent-tracking">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">{{ 'trip-execution-and-monitoring.tracking.title' | t }}</h1>
+            <p class="page-sub">Seguimiento en tiempo real del transporte de tu hijo/a</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.65rem">
+            @if (orsLoading()) {
+            <span class="ors-badge"><i class="pi pi-spin pi-spinner"></i> Trazando ruta real…</span>
+            }
+            <div class="status-badge" [class]="'status-badge ' + statusClass()">
+                <i [class]="statusIcon()"></i>
+                <span>{{ statusLabel() }}</span>
+            </div>
+        </div>
+    </div>
 
-</body>
-</html>
+    <!-- US19 — Proximity Alert Banner -->
+    @if (proximityAlert() && !arrivalConfirmed()) {
+    <div class="proximity-alert slide-down">
+        <div class="prox-icon"><i class="pi pi-bell"></i></div>
+        <div class="prox-body">
+            <p class="prox-title">🔔 ¡El bus está cerca!</p>
+            <p class="prox-msg">
+                A <strong>{{ proximityDist() ?? '...' }} metros</strong> de tu parada.
+                <strong>¡Sal ahora!</strong>
+            </p>
+        </div>
+        <button class="prox-close" (click)="dismissProximity()">✕</button>
+    </div>
+    }
+
+    <!-- US20 — Arrival Confirmation Banner -->
+    @if (arrivalConfirmed()) {
+    <div class="arrival-banner slide-down">
+        <i class="pi pi-check-circle arrival-icon"></i>
+        <div>
+            <p class="arrival-title">¡Tu hijo/a llegó a destino!</p>
+            <p class="arrival-msg">El bus llegó a las <strong>{{ arrivalTime() }}</strong>. Todos los alumnos fueron entregados correctamente.</p>
+        </div>
+    </div>
+    }
+
+    <div class="tracking-grid">
+        <!-- Map -->
+        <div class="map-col">
+            <div id="tracking-map" class="leaflet-map"></div>
+
+            <!-- Bus info card -->
+            <div class="bus-info-card">
+                <div class="bus-info-item">
+                    <i class="pi pi-user info-icon"></i>
+                    <div><span class="info-label">Conductor</span><span class="info-value">{{ busInfo().driver }}</span></div>
+                </div>
+                <div class="bus-info-item">
+                    <i class="pi pi-car info-icon"></i>
+                    <div><span class="info-label">Vehículo</span><span class="info-value">{{ busInfo().vehiclePlate }}</span></div>
+                </div>
+                <div class="bus-info-item">
+                    <i class="pi pi-clock info-icon"></i>
+                    <div><span class="info-label">ETA</span><span class="info-value eta-val">{{ etaLabel() }}</span></div>
+                </div>
+                @if (proximityDist() !== null) {
+                <div class="bus-info-item">
+                    <i class="pi pi-map-marker info-icon"></i>
+                    <div>
+                        <span class="info-label">Distancia</span>
+                        <span class="info-value" [style.color]="proximityDist()! <= 500 ? '#DE4A26' : 'var(--dark)'">{{ distanceLabel() }}</span>
+                    </div>
+                </div>
+                }
+            </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="timeline-col">
+            <h3 class="timeline-title">Recorrido del día</h3>
+            <div class="timeline">
+                @for (item of timeline(); track item.time; let i = $index, last = $last) {
+                <div class="timeline-item" [class.done]="item.done">
+                    <div class="tl-line-col">
+                        <div class="tl-dot" [class.done]="item.done"><i [class]="item.icon"></i></div>
+                        @if (!last) { <div class="tl-connector" [class.done]="item.done"></div> }
+                    </div>
+                    <div class="tl-content">
+                        <span class="tl-time">{{ item.time }}</span>
+                        <span class="tl-event">{{ item.event }}</span>
+                        @if (item.done) {
+                        <span class="tl-status done">Completado</span>
+                        } @else {
+                        <span class="tl-status pending">Pendiente</span>
+                        }
+                    </div>
+                </div>
+                }
+            </div>
+
+            <!-- Alert box (changes based on state) -->
+            @if (arrivalConfirmed()) {
+            <div class="alert-box success">
+                <i class="pi pi-check-circle alert-icon"></i>
+                <div>
+                    <p class="alert-title">Servicio concluido</p>
+                    <p class="alert-msg">Tu hijo/a fue entregado correctamente.</p>
+                </div>
+            </div>
+            } @else if (proximityAlert()) {
+            <div class="alert-box warn">
+                <i class="pi pi-exclamation-triangle alert-icon"></i>
+                <div>
+                    <p class="alert-title">¡Bus a {{ proximityDist() }} metros!</p>
+                    <p class="alert-msg">Baja ya a la parada para recibir al alumno.</p>
+                </div>
+            </div>
+            } @else {
+            <div class="alert-box">
+                <i class="pi pi-info-circle alert-icon"></i>
+                <div>
+                    <p class="alert-title">Bus en camino</p>
+                    <p class="alert-msg">Tiempo estimado de llegada: <strong>{{ etaLabel() }}</strong></p>
+                </div>
+            </div>
+            }
+        </div>
+    </div>
+</div>
