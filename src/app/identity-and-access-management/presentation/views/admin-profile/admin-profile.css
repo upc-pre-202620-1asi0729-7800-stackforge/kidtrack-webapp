@@ -1,0 +1,102 @@
+.admin-profile { padding: 1.75rem; background: var(--bg); min-height: 100vh; box-sizing: border-box; }
+
+.page-header { margin-bottom: 1.5rem; }
+.page-title  { font-size: 1.5rem; font-weight: 700; color: var(--dark); margin: 0; letter-spacing: normal; }
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .profile-grid { grid-template-columns: 1fr; }
+}
+
+/* Left col */
+.left-col { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.profile-card {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.avatar-circle {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: var(--orange);
+  font-size: 2rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.profile-name { font-size: 1.1rem; font-weight: 700; color: var(--dark); margin: 0 0 0.25rem; }
+.profile-role { font-size: 0.82rem; color: var(--muted); margin: 0 0 1rem; }
+
+.active-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.pref-card {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  padding: 1.25rem 1.5rem;
+}
+.pref-title { font-size: 0.95rem; font-weight: 700; color: var(--dark); margin: 0 0 1rem; }
+
+.pref-list { display: flex; flex-direction: column; gap: 0.85rem; }
+.pref-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  color: var(--dark);
+}
+
+/* Right col */
+.right-col { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.form-card {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  padding: 1.25rem 1.5rem 1rem;
+}
+.form-card-title { font-size: 0.95rem; font-weight: 700; color: var(--dark); margin: 0 0 1.25rem; }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.field { display: flex; flex-direction: column; gap: 0.3rem; }
+.field label { font-size: 0.82rem; font-weight: 600; color: var(--dark); }
+
+.card-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f3f4f6;
+}
