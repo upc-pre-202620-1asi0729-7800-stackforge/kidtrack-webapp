@@ -1,0 +1,75 @@
+.auth-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--dark) 0%, var(--navy) 100%);
+  padding: 2rem 1rem;
+  box-sizing: border-box;
+}
+.auth-card {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  box-sizing: border-box;
+}
+.auth-card.wide { max-width: 600px; }
+.auth-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+.brand-name {
+  margin: 0.5rem 0 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--dark);
+  letter-spacing: normal;
+}
+.form-title {
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+}
+.steps {
+  display: flex;
+  align-items: center;
+}
+.step { color: var(--muted); font-size: 0.9rem; }
+.step.active { color: var(--navy); font-weight: 600; }
+.step.done { color: var(--green); }
+.auth-footer {
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.link-btn { --mat-button-text-label-text-color: #E07A2B; }
+
+/* Plan banner */
+.plan-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #fffbeb;
+  border: 1.5px solid #E07A2B;
+  border-radius: 9px;
+  padding: 0.6rem 1rem;
+  font-size: 0.875rem;
+  color: #7c5700;
+  margin-bottom: 1.25rem;
+}
+.plan-banner-icon {
+  color: #E07A2B;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.plan-banner strong {
+  color: #1a1a2e;
+}

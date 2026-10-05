@@ -1,0 +1,109 @@
+<div class="admin-profile">
+  <div class="page-header">
+    <h1 class="page-title">Mi Perfil</h1>
+  </div>
+
+  <div class="profile-grid">
+    <!-- Left column -->
+    <div class="left-col">
+      <!-- Avatar card -->
+      <div class="profile-card">
+        <div class="avatar-circle">{{ initials() }}</div>
+        <h3 class="profile-name">{{ firstName() }} {{ lastName() }}</h3>
+        <p class="profile-role">{{ role }}</p>
+        <span class="active-badge">
+          <i class="pi pi-check-circle"></i> Cuenta Activa
+        </span>
+      </div>
+
+      <!-- Notifications card -->
+      <div class="pref-card">
+        <h4 class="pref-title">Preferencias de Notificación</h4>
+        <div class="pref-list">
+          <div class="pref-row">
+            <label for="emailAlerts">Alertas por Email</label>
+            <mat-slide-toggle id="emailAlerts" [(ngModel)]="notifications.emailAlerts" hideIcon/>
+          </div>
+          <div class="pref-row">
+            <label for="smsAlerts">Alertas por SMS</label>
+            <mat-slide-toggle id="smsAlerts" [(ngModel)]="notifications.smsAlerts" hideIcon/>
+          </div>
+          <div class="pref-row">
+            <label for="systemUpdates">Actualizaciones del Sistema</label>
+            <mat-slide-toggle id="systemUpdates" [(ngModel)]="notifications.systemUpdates" hideIcon/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column -->
+    <div class="right-col">
+      <!-- Personal info -->
+      <div class="form-card">
+        <h4 class="form-card-title">Información Personal</h4>
+        <div class="form-grid">
+          <div class="field">
+            <label>Nombre</label>
+            <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+              <input matInput [(ngModel)]="firstName">
+            </mat-form-field>
+          </div>
+          <div class="field">
+            <label>Apellidos</label>
+            <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+              <input matInput [(ngModel)]="lastName">
+            </mat-form-field>
+          </div>
+          <div class="field">
+            <label>Correo Electrónico</label>
+            <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+              <input matInput type="email" [(ngModel)]="email">
+            </mat-form-field>
+          </div>
+          <div class="field">
+            <label>Teléfono</label>
+            <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+              <input matInput [(ngModel)]="phone">
+            </mat-form-field>
+          </div>
+        </div>
+        <div class="card-footer">
+          <button mat-flat-button (click)="saveProfile()" [disabled]="saving()">
+            <i [class]="saving() ? 'pi pi-spin pi-spinner' : 'pi pi-save'"></i><span>Guardar Cambios</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Security -->
+      <div class="form-card">
+        <h4 class="form-card-title">Seguridad</h4>
+        <div class="form-grid">
+          <div class="field">
+            <label>Contraseña Actual</label>
+            <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+              <input matInput type="password" [(ngModel)]="securityData.currentPassword">
+            </mat-form-field>
+          </div>
+          <div class="field"></div>
+          <div class="field">
+            <label>Nueva Contraseña</label>
+            <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+              <input matInput type="password" [(ngModel)]="securityData.newPassword">
+            </mat-form-field>
+          </div>
+          <div class="field">
+            <label>Confirmar Nueva Contraseña</label>
+            <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+              <input matInput type="password" [(ngModel)]="securityData.confirmPassword">
+            </mat-form-field>
+          </div>
+        </div>
+        <div class="card-footer">
+          <button mat-flat-button class="warning" (click)="saveSecurity()">
+            <i class="pi pi-lock"></i><span>Actualizar Contraseña</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

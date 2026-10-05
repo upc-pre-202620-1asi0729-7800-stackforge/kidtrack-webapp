@@ -1,0 +1,49 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <h1 class="brand-name" aria-label="KidTrack"><kt-logo [size]="40"/></h1>
+    </div>
+
+    <h2 class="form-title">{{ 'identity-and-access-management.sign-in.title' | t }}</h2>
+
+    <mat-button-toggle-group class="mode-switch mb-4" [value]="mode()" (change)="mode.set($event.value)" hideSingleSelectionIndicator>
+      @for (option of modeOptions; track option.value) {
+        <mat-button-toggle [value]="option.value">
+          <i [class]="option.icon + ' mr-2'"></i>{{ option.label | t }}
+        </mat-button-toggle>
+      }
+    </mat-button-toggle-group>
+
+    <form (ngSubmit)="submit()">
+      <div class="field mb-3">
+        <label for="si-email">{{ 'identity-and-access-management.fields.email' | t }}</label>
+        <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+          <input matInput id="si-email" type="email" name="email" [(ngModel)]="email" required autocomplete="email">
+        </mat-form-field>
+      </div>
+
+      <div class="field mb-3">
+        <label for="si-password">{{ 'identity-and-access-management.fields.password' | t }}</label>
+        <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+          <input matInput id="si-password" type="password" name="password" [(ngModel)]="password" required autocomplete="current-password">
+        </mat-form-field>
+      </div>
+
+      @if (errorMessage()) {
+        <p class="error-msg mb-3">{{ errorMessage() }}</p>
+      }
+
+      <button mat-flat-button type="submit" class="w-full submit-btn" [disabled]="store.loading()">
+        <i [class]="store.loading() ? 'pi pi-spin pi-spinner' : 'pi pi-sign-in'"></i>
+        <span>{{ 'identity-and-access-management.actions.sign-in' | t }}</span>
+      </button>
+    </form>
+
+    <div class="auth-footer mt-4">
+      <span>{{ 'identity-and-access-management.sign-in.no-account' | t }}</span>
+      <button mat-button type="button" class="link-btn" (click)="goToSignUp()">
+        {{ 'identity-and-access-management.actions.register' | t }}
+      </button>
+    </div>
+  </div>
+</div>
