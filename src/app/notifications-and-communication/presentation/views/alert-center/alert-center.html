@@ -1,0 +1,159 @@
+<div class="alert-center">
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Centro de Alertas</h1>
+      <p class="page-sub">Incidencias y notificaciones del transporte escolar</p>
+    </div>
+    <button mat-flat-button (click)="openNew()"><i class="pi pi-plus"></i><span>Reportar Incidencia</span></button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="ac-tabs">
+    <button class="ac-tab" [class.active]="activeTab() === 'incidents'" (click)="activeTab.set('incidents')">
+      <i class="pi pi-exclamation-triangle"></i> Incidencias ({{ incidents().length }})
+    </button>
+    <button class="ac-tab" [class.active]="activeTab() === 'notifications'" (click)="activeTab.set('notifications')">
+      <i class="pi pi-bell"></i> Notificaciones
+      @if (unreadCount() > 0) { <span class="unread-dot">{{ unreadCount() }}</span> }
+    </button>
+  </div>
+
+  <!-- ══ INCIDENTS ══ -->
+  @if (activeTab() === 'incidents') {
+    <div class="filters-row">
+      <mat-form-field appearance="outline" class="filter-select" subscriptSizing="dynamic">
+        <mat-select [value]="filterType()" (valueChange)="filterType.set($event)">
+          @for (o of incidentTypes; track o.value) { <mat-option [value]="o.value">{{ o.label }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="filter-select" subscriptSizing="dynamic">
+        <mat-select [value]="filterSeverity()" (valueChange)="filterSeverity.set($event)">
+          @for (o of severityOptions; track o.value) { <mat-option [value]="o.value">{{ o.label }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="filter-select" subscriptSizing="dynamic">
+        <mat-select [value]="filterStatus()" (valueChange)="filterStatus.set($event)">
+          @for (o of statusOptions; track o.value) { <mat-option [value]="o.value">{{ o.label }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    @if (filteredIncidents().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-check-circle empty-icon"></i>
+        <p>No hay incidencias con los filtros actuales.</p>
+      </div>
+    }
+
+    <div class="incident-list">
+      @for (inc of filteredIncidents(); track inc.id) {
+        <div class="incident-card" [class.resolved]="inc.status === 'RESOLVED'">
+          <div class="inc-icon-col">
+            <div class="inc-icon" [style.background]="inc.severityColor + '22'" [style.color]="inc.severityColor">
+              <i [class]="inc.typeIcon"></i>
+            </div>
+          </div>
+          <div class="inc-body">
+            <div class="inc-row1">
+              <span class="inc-type">{{ inc.typeLabel }}</span>
+              <span class="sev-badge" [style.background]="inc.severityColor + '22'" [style.color]="inc.severityColor">{{ inc.severityLabel }}</span>
+              <span [class]="'status-badge ' + inc.status.toLowerCase()">{{ inc.status === 'OPEN' ? 'Abierto' : 'Resuelto' }}</span>
+            </div>
+            <p class="inc-desc">{{ inc.description }}</p>
+            <div class="inc-meta">
+              @if (inc.routeName) { <span><i class="pi pi-map-marker"></i> {{ inc.routeName }}</span> }
+              @if (inc.tripId) { <span><i class="pi pi-car"></i> Viaje #{{ inc.tripId }}</span> }
+              <span><i class="pi pi-clock"></i> {{ fmt(inc.timestamp) }}</span>
+            </div>
+          </div>
+          @if (isAdmin() && inc.status === 'OPEN') {
+            <div class="inc-actions">
+              <button mat-stroked-button class="small" (click)="resolveIncident(inc)"><i class="pi pi-check"></i><span>Resolver</span></button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ══ NOTIFICATIONS ══ -->
+  @if (activeTab() === 'notifications') {
+    <div class="notif-header-row">
+      <span class="notif-count">{{ visibleNotifs().length }} notificaciones</span>
+      @if (unreadCount() > 0) {
+        <button mat-button class="small" (click)="markAllRead()">Marcar todas leídas</button>
+      }
+    </div>
+
+    @if (visibleNotifs().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-bell-slash empty-icon"></i>
+        <p>No hay notificaciones.</p>
+      </div>
+    }
+
+    <div class="notif-list">
+      @for (n of visibleNotifs(); track n.id) {
+        <div class="notif-item" [class.unread]="!n.read" (click)="markRead(n)">
+          <div class="notif-dot-col">
+            <div class="notif-icon" [style.color]="n.color"><i [class]="n.icon"></i></div>
+            @if (!n.read) { <div class="unread-indicator"></div> }
+          </div>
+          <div class="notif-body">
+            <p class="notif-title-text">{{ n.title }}</p>
+            <p class="notif-msg">{{ n.message }}</p>
+            <span class="notif-time">{{ fmt(n.timestamp) }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- ── New incident dialog ──────────────────────────────── -->
+<ng-template #newIncidentDialog>
+  <div class="kt-dialog-header">
+    <h3>Reportar Incidencia</h3>
+    <button mat-icon-button (click)="closeDialog()"><i class="pi pi-times"></i></button>
+  </div>
+  <div class="kt-dialog-body">
+    <div class="form-grid">
+      <div class="field">
+        <label>Viaje (opcional)</label>
+        <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+          <mat-select [(ngModel)]="form.tripId" placeholder="Seleccionar viaje...">
+            <mat-option [value]="null">—</mat-option>
+            @for (t of trips(); track t.id) { <mat-option [value]="t.id">#{{ t.id }} — {{ t.routeName }}</mat-option> }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="field">
+        <label>Tipo de Incidencia *</label>
+        <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+          <mat-select [(ngModel)]="form.type">
+            @for (o of reportableTypes; track o.value) { <mat-option [value]="o.value">{{ o.label }}</mat-option> }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="field">
+        <label>Gravedad</label>
+        <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+          <mat-select [(ngModel)]="form.severity">
+            @for (o of severityOptions.slice(1); track o.value) { <mat-option [value]="o.value">{{ o.label }}</mat-option> }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="field full">
+        <label>Descripción *</label>
+        <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+          <textarea matInput rows="4" [(ngModel)]="form.description" placeholder="Describe la incidencia con detalle..."></textarea>
+        </mat-form-field>
+      </div>
+    </div>
+  </div>
+  <div class="kt-dialog-footer">
+    <button mat-button (click)="closeDialog()">Cancelar</button>
+    <button mat-flat-button [disabled]="!form.description" (click)="saveIncident()"><i class="pi pi-send"></i><span>Reportar</span></button>
+  </div>
+</ng-template>
