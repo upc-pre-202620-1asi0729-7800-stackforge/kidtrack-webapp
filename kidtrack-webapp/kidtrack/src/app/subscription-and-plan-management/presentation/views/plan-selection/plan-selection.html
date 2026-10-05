@@ -1,0 +1,100 @@
+<div class="pricing-page">
+
+    <!-- ── Header ────────────────────────────────────────── -->
+    <div class="pricing-header">
+        <p class="pricing-eyebrow">Planes y precios</p>
+        <h1 class="pricing-title">Elige el plan ideal<br>para tu operación</h1>
+        <p class="pricing-sub">
+            Digitaliza tu transporte escolar. Sin costos ocultos. Cancela cuando quieras.
+        </p>
+
+        <!-- Billing toggle -->
+        <div class="billing-toggle">
+            <button class="tgl-btn" [class.active]="billing() === 'monthly'" (click)="billing.set('monthly')">
+                Mensual
+            </button>
+            <button class="tgl-btn" [class.active]="billing() === 'annual'" (click)="billing.set('annual')">
+                Anual
+                <span class="off-chip">−20%</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Loading ───────────────────────────────────────── -->
+    @if (store.loading() && !store.plansLoaded()) {
+    <div class="spinner-wrap"><i class="pi pi-spin pi-spinner"></i></div>
+    } @else {
+    <!-- ── Plans ─────────────────────────────────────────── -->
+    <div class="plans-row">
+        @for (plan of store.sortedPlans(); track plan.id) {
+        <div class="plan-card" [class.popular]="plan.planTier === 'INTERMEDIATE'" [class.current]="isCurrent(plan)">
+
+            <!-- badges -->
+            @if (meta(plan).badge) {
+            <div class="top-badge" [class.badge-popular]="plan.planTier === 'INTERMEDIATE'">{{ meta(plan).badge }}</div>
+            }
+            @if (isCurrent(plan)) {
+            <div class="current-chip"><i class="pi pi-check-circle"></i> Plan Actual</div>
+            }
+
+            <!-- plan top -->
+            <div class="plan-head">
+                <div class="plan-icon" [style.background]="meta(plan).color + '18'" [style.color]="meta(plan).color">
+                    <i [class]="meta(plan).icon"></i>
+                </div>
+                <div>
+                    <h3 class="plan-name">{{ meta(plan).name }}</h3>
+                    <p class="plan-desc">{{ meta(plan).desc }}</p>
+                </div>
+            </div>
+
+            <!-- price -->
+            <div class="plan-price-block">
+                <div class="plan-price">
+                    <span class="currency">$</span>
+                    <span class="amount" [class.price-strike]="priceAfterCredit(plan) !== null">{{ displayPrice(plan) }}</span>
+                    @if (priceAfterCredit(plan) !== null) {
+                    <span class="amount amount-prorated">{{ priceAfterCredit(plan) }}</span>
+                    }
+                    <span class="per">/ mes</span>
+                </div>
+                @if (priceAfterCredit(plan) !== null) {
+                <div class="proration-chip">
+                    <i class="pi pi-tag"></i> Crédito aplicado: −${{ proratedCredit() }}
+                    <span class="proration-days">({{ remainingDays() }} días restantes)</span>
+                </div>
+                } @else if (billing() === 'annual') {
+                <p class="annual-hint">${{ annualTotal(plan) }} al año · 2 meses gratis</p>
+                } @else {
+                <p class="annual-hint">o S/ {{ annualTotal(plan) }} al año con 20% off</p>
+                }
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- features -->
+            <ul class="feat-list">
+                @for (f of meta(plan).features; track f.text) {
+                <li class="feat-item" [class.locked]="!f.ok">
+                    <span class="feat-icon"><i [class]="f.ok ? 'pi pi-check' : 'pi pi-times'"></i></span>
+                    {{ f.text }}
+                </li>
+                }
+            </ul>
+
+            <!-- CTA -->
+            <button mat-flat-button class="cta-btn w-full" [disabled]="isCurrent(plan)" (click)="openPaypal(plan)">
+                <i [class]="isCurrent(plan) ? 'pi pi-check' : 'pi pi-paypal'"></i>
+                <span>{{ isCurrent(plan) ? 'Plan Actual' : 'Contratar ahora' }}</span>
+            </button>
+        </div>
+        }
+    </div>
+    }
+
+    <!-- ── Footer note ───────────────────────────────────── -->
+    <p class="pricing-note">
+        <i class="pi pi-lock"></i> Pago seguro &nbsp;·&nbsp; Cancela en cualquier momento &nbsp;·&nbsp; Precios en USD ($)
+    </p>
+
+</div>
