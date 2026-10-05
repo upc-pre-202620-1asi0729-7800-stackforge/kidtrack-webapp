@@ -1,0 +1,266 @@
+<div class="route-mgmt">
+
+  <!-- Page header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">{{ 'fleet-and-route-planning.management.title' | t }}</h1>
+      <p class="page-sub">{{ 'fleet-and-route-planning.management.subtitle' | t }}</p>
+    </div>
+    <button mat-flat-button (click)="openCreate()">
+      <i class="pi pi-plus"></i><span>{{ 'fleet-and-route-planning.management.new' | t }}</span>
+    </button>
+  </div>
+
+  <!-- Main grid: list + preview map -->
+  <div class="content-grid">
+
+    <!-- Route list -->
+    <div class="route-list-panel">
+      @if (loading()) {
+        <div class="state-msg"><i class="pi pi-spin pi-spinner"></i> Cargando…</div>
+      }
+
+      @for (route of routes(); track route.id) {
+        <div class="route-card" [class.active]="selected()?.id === route.id" (click)="selectRoute(route)">
+          <div class="route-card-header">
+            <span class="route-name">{{ route.name }}</span>
+            <span class="complete-dot"
+                  [title]="route.isComplete() ? 'Ruta completa' : 'Ruta incompleta'"
+                  [style.background]="route.isComplete() ? '#22c55e' : '#f59e0b'"></span>
+          </div>
+
+          <div class="route-meta-row">
+            <span class="type-chip" [class]="'type-chip ' + typeClass(route.type)">
+              <i [class]="route.type === 'OUTBOUND' ? 'pi pi-arrow-right' : 'pi pi-arrow-left'"></i>
+              {{ typeLabel(route.type) }}
+            </span>
+            @if (route.scheduledStartTime) {
+              <span class="meta-tag"><i class="pi pi-clock"></i> {{ route.scheduledStartTime }}</span>
+            }
+          </div>
+
+          <div class="route-info-row">
+            <i class="pi pi-map-marker info-icon"></i>
+            <span>{{ route.origin || '—' }} → {{ route.destination || '—' }}</span>
+          </div>
+          <div class="route-info-row">
+            <i class="pi pi-user info-icon"></i>
+            <span>{{ route.driverName || '—' }}</span>
+          </div>
+          @if (route.vehiclePlate) {
+            <div class="route-info-row">
+              <i class="pi pi-truck info-icon"></i>
+              <span>{{ route.vehiclePlate }}</span>
+            </div>
+          }
+          @if (route.studentIds.length) {
+            <div class="route-info-row">
+              <i class="pi pi-users info-icon"></i>
+              <span>{{ route.studentIds.length }} estudiante{{ route.studentIds.length !== 1 ? 's' : '' }}</span>
+            </div>
+          }
+
+          <div class="route-card-actions">
+            <button mat-icon-button class="kt-icon-btn" (click)="openEdit(route, $event)"><i class="pi pi-pencil"></i></button>
+            <button mat-icon-button class="kt-icon-btn danger" (click)="deleteRoute(route, $event)"><i class="pi pi-trash"></i></button>
+          </div>
+        </div>
+      }
+
+      @if (!loading() && routes().length === 0) {
+        <div class="state-msg">{{ 'fleet-and-route-planning.management.empty' | t }}</div>
+      }
+    </div>
+
+    <!-- Preview map -->
+    <div class="map-panel">
+      <div id="route-map" class="leaflet-map"></div>
+      @if (selected(); as sel) {
+        <div class="map-info-bar">
+          <i class="pi pi-info-circle" style="color:var(--orange)"></i>
+          <span>{{ sel.name }}</span>
+          <span [class]="'type-chip ' + typeClass(sel.type)" style="margin-left:.5rem">{{ typeLabel(sel.type) }}</span>
+          @if (previewOrsLoading()) {
+            <span class="ors-loading" style="margin-left:auto"><i class="pi pi-spin pi-spinner"></i> Trazando ruta…</span>
+          }
+        </div>
+      } @else {
+        <div class="map-info-bar muted-hint">
+          <i class="pi pi-hand-pointer"></i> Selecciona una ruta para ver su recorrido
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     CREATE / EDIT DIALOG
+═════════════════════════════════════════════════════════ -->
+<ng-template #routeDialog>
+  <div class="kt-dialog-header route-dialog-header">
+    <h3>{{ (isEdit() ? 'fleet-and-route-planning.management.edit' : 'fleet-and-route-planning.management.new') | t }}</h3>
+    <button mat-icon-button (click)="closeDialog()"><i class="pi pi-times"></i></button>
+  </div>
+
+  <div class="dialog-body">
+
+    <!-- LEFT: form -->
+    <div class="dialog-form-col">
+      <div class="form-scroll">
+
+        <!-- ── Información básica ── -->
+        <p class="form-section-title"><i class="pi pi-info-circle"></i> Información</p>
+
+        <div class="field">
+          <label>Nombre de la ruta <span class="req">*</span></label>
+          <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+            <input matInput [(ngModel)]="form.name" placeholder="Ej: Ruta Norte — Comas">
+          </mat-form-field>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Tipo de ruta</label>
+            <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+              <mat-select [(ngModel)]="form.type">
+                @for (o of typeOptions; track o.value) { <mat-option [value]="o.value">{{ o.label }}</mat-option> }
+              </mat-select>
+            </mat-form-field>
+          </div>
+          <div class="field">
+            <label>Hora de salida <span class="req">*</span></label>
+            <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+              <input matInput type="time" [(ngModel)]="form.scheduledStartTime" placeholder="06:00">
+            </mat-form-field>
+          </div>
+        </div>
+
+        <!-- ── Asignación ── -->
+        <p class="form-section-title" style="margin-top:.5rem"><i class="pi pi-users"></i> Asignación</p>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Conductor <span class="req">*</span></label>
+            <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+              <mat-select [ngModel]="form.driverId" (ngModelChange)="onDriverChange($event)" placeholder="Seleccionar conductor" [disabled]="isDriver()">
+                @for (o of driverOptions(); track o.value) { <mat-option [value]="o.value">{{ o.label }}</mat-option> }
+              </mat-select>
+            </mat-form-field>
+          </div>
+          <div class="field">
+            <label>Vehículo <span class="req">*</span></label>
+            <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+              <mat-select [ngModel]="selectedVehicleValue()" (ngModelChange)="onVehicleChange($event)" placeholder="Seleccionar vehículo">
+                @for (o of vehicleOptions(); track o.value) { <mat-option [value]="o.value">{{ o.label }}</mat-option> }
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <!-- ── Paradas (mapa interactivo) ── -->
+        <div class="wps-header">
+          <p class="form-section-title" style="margin:0">
+            <i class="pi pi-map-marker"></i> Paradas
+            <span class="wps-count">{{ form.waypoints.length }}</span>
+          </p>
+          @if (form.waypoints.length) {
+            <button mat-button class="danger small" (click)="clearWaypoints()"><i class="pi pi-trash"></i><span>Limpiar</span></button>
+          }
+        </div>
+
+        <div class="map-hint">
+          <i class="pi pi-hand-pointer hint-icon"></i>
+          <span>Haz clic en el mapa para agregar paradas. Arrastra los marcadores para reposicionarlos.</span>
+          @if (form.waypoints.length >= 3) {
+            <button mat-flat-button class="secondary small ml-auto" matTooltip="Reordena las paradas intermedias para la ruta más corta (TSP)" matTooltipPosition="above" (click)="optimizeWaypoints()">
+              <i class="pi pi-bolt"></i><span>Optimizar orden</span>
+            </button>
+          }
+        </div>
+
+        @if (form.waypoints.length) {
+          <div class="wp-list">
+            @for (wp of form.waypoints; track $index; let i = $index) {
+              <div class="wp-item">
+                <div class="wp-num" [style.background]="stopColor(i, form.waypoints.length)">{{ i + 1 }}</div>
+                <div class="wp-content">
+                  <input class="wp-name-input" [(ngModel)]="wp.name" (ngModelChange)="onWaypointNameChange()" [placeholder]="'Parada ' + (i + 1)">
+                  <span class="wp-coords">{{ wp.lat }}, {{ wp.lng }}</span>
+                  <!-- Per-stop student assignment -->
+                  <div class="wp-students">
+                    <span class="wp-students-label"><i class="pi pi-users"></i> Alumnos en esta parada:</span>
+                    <div class="wp-student-chips">
+                      @for (s of studentOptions(); track s.value) {
+                        <button type="button" class="wp-student-chip" [class.selected]="isStudentAtStop(wp, s.value)" (click)="toggleStudent(wp, s.value)">
+                          {{ s.label }}
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </div>
+                <button mat-icon-button class="kt-icon-btn danger" (click)="removeWaypoint(i)"><i class="pi pi-times"></i></button>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="wp-empty">
+            <i class="pi pi-map" style="font-size:1.8rem;color:#d1d5db"></i>
+            <p>Sin paradas.<br>Haz clic en el mapa para comenzar.</p>
+          </div>
+        }
+
+        <!-- Origin/Destination summary -->
+        @if (form.waypoints.length >= 2) {
+          <div class="od-summary">
+            <div class="od-item">
+              <span class="od-dot origin-dot"></span>
+              <div><span class="od-label">Origen</span><span class="od-value">{{ form.origin }}</span></div>
+            </div>
+            <div class="od-line"></div>
+            <div class="od-item">
+              <span class="od-dot dest-dot"></span>
+              <div><span class="od-label">Destino</span><span class="od-value">{{ form.destination }}</span></div>
+            </div>
+          </div>
+        }
+
+        <!-- ── Completeness banner ── -->
+        <div class="completeness-banner" [class.complete]="form.isComplete()" [class.incomplete]="!form.isComplete()">
+          <i [class]="form.isComplete() ? 'pi pi-check-circle' : 'pi pi-exclamation-triangle'"></i>
+          <div>
+            <strong>{{ form.isComplete() ? 'Ruta completa' : 'Ruta incompleta' }}</strong>
+            @if (!form.isComplete()) {
+              <p style="margin:0;font-size:0.73rem">Faltan: {{ form.missingRequirements().join(', ') }}</p>
+            } @else {
+              <p style="margin:0;font-size:0.73rem">Al guardar se generará un viaje programado para hoy.</p>
+            }
+          </div>
+        </div>
+
+      </div><!-- /form-scroll -->
+
+      <!-- Footer -->
+      <div class="dialog-footer">
+        <button mat-button (click)="closeDialog()">Cancelar</button>
+        <button mat-flat-button [disabled]="!form.name || saving()" (click)="saveRoute()">
+          <i [class]="saving() ? 'pi pi-spin pi-spinner' : 'pi pi-check'"></i>
+          <span>{{ isEdit() ? 'Guardar cambios' : 'Crear Ruta' }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- RIGHT: map -->
+    <div class="dialog-map-col">
+      <div id="form-map" class="form-leaflet-map"></div>
+      <div class="form-map-legend">
+        <span class="legend-item"><span class="legend-dot" style="background:#16a34a"></span> Origen</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#1E3A63"></span> Parada</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#DE4A26"></span> Destino</span>
+        @if (formOrsLoading()) {
+          <span class="ors-loading"><i class="pi pi-spin pi-spinner"></i> Calculando ruta real…</span>
+        }
+      </div>
+    </div>
+
+  </div>
+</ng-template>
