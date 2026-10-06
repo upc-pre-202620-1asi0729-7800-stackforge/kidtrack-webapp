@@ -6,10 +6,10 @@ import { iamInterceptor } from './identity-and-access-management/infrastructure/
 import { KidTrackTitleStrategy } from './shared/presentation/kid-track-title.strategy';
 
 export const appConfig: ApplicationConfig = {
-    providers: [
-        provideBrowserGlobalErrorListeners(),
-        provideRouter(routes, withComponentInputBinding()),
-        provideHttpClient(withInterceptors([iamInterceptor])),
-        { provide: TitleStrategy, useClass: KidTrackTitleStrategy },
-    ],
+  providers: [
+    provideBrowserGlobalErrorListeners(),
+    provideRouter(routes, withComponentInputBinding()),
+    provideHttpClient(withInterceptors([iamInterceptor])),
+    { provide: TitleStrategy, useClass: KidTrackTitleStrategy },
+  ],
 };

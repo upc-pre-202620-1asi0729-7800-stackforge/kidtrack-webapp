@@ -1,13 +1,13 @@
 .co-bg {
-    min-height: 100vh;
-    background: linear-gradient(135deg, #0f1b36 0%, #1E3A63 50%, #1a2a4a 100%);
-    display: flex; align-items: flex-start; justify-content: center;
-    padding: 40px 16px 60px;
-    box-sizing: border-box;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f1b36 0%, #1E3A63 50%, #1a2a4a 100%);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 40px 16px 60px;
+  box-sizing: border-box;
 }
 .co-wrap {
-    display: flex; flex-direction: column; align-items: center;
-    width: 100%; max-width: 480px;
+  display: flex; flex-direction: column; align-items: center;
+  width: 100%; max-width: 480px;
 }
 
 /* Logo */
@@ -15,35 +15,35 @@
 
 /* Sandbox pill */
 .co-sandbox-pill {
-    display: inline-flex; align-items: center; gap: 7px;
-    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18);
-    border-radius: 20px; padding: 4px 14px;
-    font-size: 0.78rem; color: #94a3b8; margin-bottom: 24px;
+  display: inline-flex; align-items: center; gap: 7px;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18);
+  border-radius: 20px; padding: 4px 14px;
+  font-size: 0.78rem; color: #94a3b8; margin-bottom: 24px;
 }
 .co-dot {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: #E07A2B; animation: pulse 1.6s ease-in-out infinite;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #E07A2B; animation: pulse 1.6s ease-in-out infinite;
 }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
 
 /* Card */
 .co-card {
-    background: #fff; border-radius: 20px; padding: 36px; width: 100%;
-    box-shadow: 0 24px 64px rgba(0,0,0,0.4);
-    box-sizing: border-box;
+  background: #fff; border-radius: 20px; padding: 36px; width: 100%;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+  box-sizing: border-box;
 }
 .co-title    { font-size: 1.3rem; font-weight: 800; color: #0f172a; margin: 0 0 4px; letter-spacing: normal; }
 .co-subtitle { font-size: 0.875rem; color: #64748b; margin: 0 0 22px; }
 
 /* Order summary */
 .co-order {
-    background: linear-gradient(135deg, #fef3c7, #fde68a);
-    border: 1.5px solid #E07A2B; border-radius: 12px;
-    padding: 16px 20px; margin-bottom: 22px;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 1.5px solid #E07A2B; border-radius: 12px;
+  padding: 16px 20px; margin-bottom: 22px;
 }
 .co-order-label {
-    font-size: 0.72rem; font-weight: 600; color: #9a4416;
-    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px;
+  font-size: 0.72rem; font-weight: 600; color: #9a4416;
+  text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px;
 }
 .co-order-plan  { font-size: 1.35rem; font-weight: 800; color: #78350f; }
 .co-order-price { font-size: 0.95rem; color: #9a4416; margin-top: 2px; }
@@ -55,20 +55,20 @@
 
 /* Spinner */
 .co-spinner-wrap {
-    display: flex; align-items: center; gap: 10px;
-    color: #64748b; font-size: 0.85rem; padding: 10px 0 14px;
+  display: flex; align-items: center; gap: 10px;
+  color: #64748b; font-size: 0.85rem; padding: 10px 0 14px;
 }
 .co-spinner {
-    width: 20px; height: 20px; border: 2px solid #e2e8f0;
-    border-top-color: #E07A2B; border-radius: 50%;
-    animation: spin 0.75s linear infinite; flex-shrink: 0;
+  width: 20px; height: 20px; border: 2px solid #e2e8f0;
+  border-top-color: #E07A2B; border-radius: 50%;
+  animation: spin 0.75s linear infinite; flex-shrink: 0;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Status messages */
 .co-msg {
-    display: flex; align-items: flex-start; gap: 12px;
-    border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; font-size: 0.875rem;
+  display: flex; align-items: flex-start; gap: 12px;
+  border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; font-size: 0.875rem;
 }
 .co-msg strong { display: block; font-weight: 700; margin-bottom: 2px; }
 .co-msg p      { margin: 0; opacity: 0.85; }
@@ -83,8 +83,8 @@
 /* Back link */
 .co-back-link { text-align: center; margin-top: 20px; }
 .co-btn-link {
-    background: none; border: none; color: #94a3b8;
-    font-size: 0.82rem; cursor: pointer; padding: 4px 8px;
-    transition: color .15s; font-family: inherit;
+  background: none; border: none; color: #94a3b8;
+  font-size: 0.82rem; cursor: pointer; padding: 4px 8px;
+  transition: color .15s; font-family: inherit;
 }
 .co-btn-link:hover { color: #E07A2B; }

@@ -6,9 +6,9 @@ import { TripStore } from '../../../application/trip.store';
 
 /** Scheduled and past trips with status badges (drivers see their own). */
 @Component({
-    selector: 'kt-trip-list',
-    imports: [MatPaginatorModule, MatTableModule],
-    template: `
+  selector: 'kt-trip-list',
+  imports: [MatPaginatorModule, MatTableModule],
+  template: `
     <div class="p-4">
       <h1 class="list-title">Trips</h1>
       <div class="table-card">
@@ -46,7 +46,7 @@ import { TripStore } from '../../../application/trip.store';
       </div>
     </div>
   `,
-    styles: `
+  styles: `
     .list-title { font-size: 2rem; margin: 0 0 1rem; color: var(--dark); }
     .table-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow-x: auto; }
     .kt-table { width: 100%; min-width: 50rem; }
@@ -55,27 +55,27 @@ import { TripStore } from '../../../application/trip.store';
   `,
 })
 export class TripList implements OnInit {
-    private readonly iamStore = inject(IamStore);
-    private readonly store = inject(TripStore);
+  private readonly iamStore = inject(IamStore);
+  private readonly store = inject(TripStore);
 
-    protected readonly columns = ['id', 'route', 'driver', 'date', 'status', 'location'];
-    protected readonly pageIndex = signal(0);
-    protected readonly pageSize = signal(5);
+  protected readonly columns = ['id', 'route', 'driver', 'date', 'status', 'location'];
+  protected readonly pageIndex = signal(0);
+  protected readonly pageSize = signal(5);
 
-    protected readonly trips = computed(() => {
-        const user = this.iamStore.currentUser();
-        const all = this.store.trips();
-        return user?.roleTier === 'DRIVER' ? all.filter(t => t.driverId === String(user.id)) : all;
-    });
-    protected readonly page = computed(() =>
-        this.trips().slice(this.pageIndex() * this.pageSize(), (this.pageIndex() + 1) * this.pageSize()));
+  protected readonly trips = computed(() => {
+    const user = this.iamStore.currentUser();
+    const all = this.store.trips();
+    return user?.roleTier === 'DRIVER' ? all.filter(t => t.driverId === String(user.id)) : all;
+  });
+  protected readonly page = computed(() =>
+    this.trips().slice(this.pageIndex() * this.pageSize(), (this.pageIndex() + 1) * this.pageSize()));
 
-    ngOnInit(): void {
-        void this.store.loadTrips(this.iamStore.organizationId());
-    }
+  ngOnInit(): void {
+    void this.store.loadTrips(this.iamStore.organizationId());
+  }
 
-    protected onPage(event: PageEvent): void {
-        this.pageIndex.set(event.pageIndex);
-        this.pageSize.set(event.pageSize);
-    }
+  protected onPage(event: PageEvent): void {
+    this.pageIndex.set(event.pageIndex);
+    this.pageSize.set(event.pageSize);
+  }
 }

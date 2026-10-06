@@ -10,22 +10,22 @@ import { PlanResource, SubscriptionResource } from './subscription.resources';
  */
 @Injectable({ providedIn: 'root' })
 export class SubscriptionApi extends BaseApi {
-    private readonly plans = this.endpoint<PlanResource>(environment.plansEndpointPath);
-    private readonly subscriptions = this.endpoint<SubscriptionResource>(environment.subscriptionsEndpointPath);
+  private readonly plans = this.endpoint<PlanResource>(environment.plansEndpointPath);
+  private readonly subscriptions = this.endpoint<SubscriptionResource>(environment.subscriptionsEndpointPath);
 
-    getAllPlans(): Observable<PlanResource[]> {
-        return this.plans.getAll();
-    }
+  getAllPlans(): Observable<PlanResource[]> {
+    return this.plans.getAll();
+  }
 
-    getActiveSubscriptionsByOrganization(organizationId: string): Observable<SubscriptionResource[]> {
-        return this.subscriptions.getAll({ organizationId, state: 'ACTIVE' });
-    }
+  getActiveSubscriptionsByOrganization(organizationId: string): Observable<SubscriptionResource[]> {
+    return this.subscriptions.getAll({ organizationId, state: 'ACTIVE' });
+  }
 
-    createSubscription(request: Omit<SubscriptionResource, 'id'>): Observable<SubscriptionResource> {
-        return this.subscriptions.create(request);
-    }
+  createSubscription(request: Omit<SubscriptionResource, 'id'>): Observable<SubscriptionResource> {
+    return this.subscriptions.create(request);
+  }
 
-    patchSubscription(id: EntityId, partial: Partial<SubscriptionResource>): Observable<SubscriptionResource> {
-        return this.subscriptions.patch(id, partial);
-    }
+  patchSubscription(id: EntityId, partial: Partial<SubscriptionResource>): Observable<SubscriptionResource> {
+    return this.subscriptions.patch(id, partial);
+  }
 }

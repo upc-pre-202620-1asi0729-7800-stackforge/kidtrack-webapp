@@ -1,43 +1,43 @@
 <div class="active-trip">
 
-    <!-- Header -->
-    <div class="page-header">
-        <div>
-            <h1 class="page-title">Viajes</h1>
-            <p class="page-sub">Selecciona un viaje para iniciar o continuar la simulación</p>
-        </div>
-        <div class="header-right">
-            @if (isOffline()) {
-            <div class="offline-badge"><i class="pi pi-wifi" style="text-decoration: line-through"></i> Modo Offline: reconectando...</div>
-            }
-            @if (orsLoading()) {
-            <span class="ors-badge"><i class="pi pi-spin pi-spinner"></i> Calculando ruta real…</span>
-            }
-            @if (tripData() && isEnRoute() && waypoints().length) {
-            <button mat-flat-button class="secondary small" [disabled]="orsLoading() || isOffline()" (click)="resetSim()">
-                <i class="pi pi-refresh"></i><span>Reiniciar</span>
-            </button>
-            @if (!simRunning()) {
-            <button mat-flat-button class="small" [disabled]="orsLoading() || isOffline()" (click)="startSim()">
-                <i class="pi pi-play"></i><span>Simular</span>
-            </button>
-            } @else {
-            <button mat-flat-button class="secondary small" (click)="pauseSim()"><i class="pi pi-pause"></i><span>Pausar</span></button>
-            }
-            }
-        </div>
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Viajes</h1>
+      <p class="page-sub">Selecciona un viaje para iniciar o continuar la simulación</p>
     </div>
+    <div class="header-right">
+      @if (isOffline()) {
+        <div class="offline-badge"><i class="pi pi-wifi" style="text-decoration: line-through"></i> Modo Offline: reconectando...</div>
+      }
+      @if (orsLoading()) {
+        <span class="ors-badge"><i class="pi pi-spin pi-spinner"></i> Calculando ruta real…</span>
+      }
+      @if (tripData() && isEnRoute() && waypoints().length) {
+        <button mat-flat-button class="secondary small" [disabled]="orsLoading() || isOffline()" (click)="resetSim()">
+          <i class="pi pi-refresh"></i><span>Reiniciar</span>
+        </button>
+        @if (!simRunning()) {
+          <button mat-flat-button class="small" [disabled]="orsLoading() || isOffline()" (click)="startSim()">
+            <i class="pi pi-play"></i><span>Simular</span>
+          </button>
+        } @else {
+          <button mat-flat-button class="secondary small" (click)="pauseSim()"><i class="pi pi-pause"></i><span>Pausar</span></button>
+        }
+      }
+    </div>
+  </div>
 
-    @if (loading()) {
+  @if (loading()) {
     <div class="loading-state"><i class="pi pi-spin pi-spinner" style="font-size:2rem;color:var(--orange)"></i></div>
-    } @else {
+  } @else {
 
     <!-- Stats bar (only when a trip is selected) -->
     @if (tripData(); as trip) {
-    <div class="stats-row">
+      <div class="stats-row">
         <div class="stat-card">
-            <span class="stat-label">Estado</span>
-            <span class="stat-value">
+          <span class="stat-label">Estado</span>
+          <span class="stat-value">
             <span class="status-pill" [class]="'status-pill ' + statusPillClass()">
               <i [class]="statusMeta().icon" style="font-size:0.6rem"></i>
               {{ statusMeta().label }}
@@ -45,223 +45,223 @@
           </span>
         </div>
         <div class="stat-card">
-            <span class="stat-label">Alumnos</span>
-            <span class="stat-value">{{ trip.studentsBoarded }} / {{ trip.studentsTotal }}</span>
+          <span class="stat-label">Alumnos</span>
+          <span class="stat-value">{{ trip.studentsBoarded }} / {{ trip.studentsTotal }}</span>
         </div>
         <div class="stat-card">
-            <span class="stat-label">Progreso</span>
-            <span class="stat-value">{{ progress() }}%</span>
+          <span class="stat-label">Progreso</span>
+          <span class="stat-value">{{ progress() }}%</span>
         </div>
         @if (trip.vehiclePlate) {
-        <div class="stat-card">
+          <div class="stat-card">
             <span class="stat-label">Vehículo</span>
             <span class="stat-value small">{{ trip.vehiclePlate }}</span>
-        </div>
+          </div>
         }
         @if (trip.scheduledStartTime) {
-        <div class="stat-card">
+          <div class="stat-card">
             <span class="stat-label">Salida</span>
             <span class="stat-value small">{{ trip.scheduledStartTime }}</span>
-        </div>
+          </div>
         }
         <div class="stat-card">
-            <span class="stat-label">Parada actual</span>
-            <span class="stat-value small">{{ trip.currentStop || (isCompleted() ? 'Finalizado' : '—') }}</span>
+          <span class="stat-label">Parada actual</span>
+          <span class="stat-value small">{{ trip.currentStop || (isCompleted() ? 'Finalizado' : '—') }}</span>
         </div>
-    </div>
+      </div>
     }
 
     <!-- Three-column layout -->
     <div class="content-grid">
 
-        <!-- LEFT: trip selector list -->
-        <div class="trips-panel">
-            <p class="panel-label">Viajes disponibles</p>
-            @if (allTrips().length === 0) { <div class="empty-panel">Sin viajes</div> }
+      <!-- LEFT: trip selector list -->
+      <div class="trips-panel">
+        <p class="panel-label">Viajes disponibles</p>
+        @if (allTrips().length === 0) { <div class="empty-panel">Sin viajes</div> }
 
-            @for (trip of allTrips(); track trip.id) {
-            <div class="trip-card" [class.active]="isSelected(trip)" (click)="selectTrip(trip)">
-                <div class="trip-card-top">
-                    <span class="trip-card-name">{{ trip.displayName }}</span>
-                    <span class="status-dot" [style.background]="metaOf(trip).text"></span>
-                </div>
-                <div class="trip-card-meta">
-                    <span><i class="pi pi-user meta-icon"></i> {{ trip.driverName }}</span>
-                    <span><i class="pi pi-users meta-icon"></i> {{ trip.studentsBoarded }}/{{ trip.studentsTotal }}</span>
-                </div>
-                <div class="trip-card-bottom">
-                    <span [class]="'type-chip ' + trip.typeClass">{{ trip.typeLabel }}</span>
-                    <span class="status-label" [style.color]="metaOf(trip).text">{{ metaOf(trip).label }}</span>
-                </div>
+        @for (trip of allTrips(); track trip.id) {
+          <div class="trip-card" [class.active]="isSelected(trip)" (click)="selectTrip(trip)">
+            <div class="trip-card-top">
+              <span class="trip-card-name">{{ trip.displayName }}</span>
+              <span class="status-dot" [style.background]="metaOf(trip).text"></span>
             </div>
+            <div class="trip-card-meta">
+              <span><i class="pi pi-user meta-icon"></i> {{ trip.driverName }}</span>
+              <span><i class="pi pi-users meta-icon"></i> {{ trip.studentsBoarded }}/{{ trip.studentsTotal }}</span>
+            </div>
+            <div class="trip-card-bottom">
+              <span [class]="'type-chip ' + trip.typeClass">{{ trip.typeLabel }}</span>
+              <span class="status-label" [style.color]="metaOf(trip).text">{{ metaOf(trip).label }}</span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- CENTER: map + progress -->
+      <div class="map-col">
+        <div id="active-trip-map" class="leaflet-map"></div>
+        @if (tripData(); as trip) {
+          <div class="progress-card">
+            <div class="progress-header">
+              <span>{{ trip.routeName }}</span>
+              <strong [style.color]="progress() === 100 ? 'var(--green)' : 'var(--orange)'">{{ progress() }}%</strong>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" [style.width.%]="progress()" [style.background]="progress() === 100 ? 'var(--green)' : 'var(--orange)'"></div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- RIGHT: stops panel -->
+      <div class="stops-col">
+        @if (!tripData()) {
+          <div class="start-state">
+            <i class="pi pi-hand-pointer start-icon"></i>
+            <p>Selecciona un viaje de la lista para ver sus paradas.</p>
+          </div>
+        } @else {
+          <div class="stops-header">
+            <h3 class="stops-title">
+              <i class="pi pi-map-marker"></i>
+              Paradas
+              <span class="stops-count">{{ waypoints().length }}</span>
+            </h3>
+            @if (simRunning()) {
+              <span class="sim-badge"><i class="pi pi-spin pi-spinner" style="font-size:0.7rem"></i> Simulando…</span>
             }
-        </div>
+          </div>
 
-        <!-- CENTER: map + progress -->
-        <div class="map-col">
-            <div id="active-trip-map" class="leaflet-map"></div>
-            @if (tripData(); as trip) {
-            <div class="progress-card">
-                <div class="progress-header">
-                    <span>{{ trip.routeName }}</span>
-                    <strong [style.color]="progress() === 100 ? 'var(--green)' : 'var(--orange)'">{{ progress() }}%</strong>
-                </div>
-                <div class="progress-track">
-                    <div class="progress-fill" [style.width.%]="progress()" [style.background]="progress() === 100 ? 'var(--green)' : 'var(--orange)'"></div>
-                </div>
-            </div>
-            }
-        </div>
-
-        <!-- RIGHT: stops panel -->
-        <div class="stops-col">
-            @if (!tripData()) {
-            <div class="start-state">
-                <i class="pi pi-hand-pointer start-icon"></i>
-                <p>Selecciona un viaje de la lista para ver sus paradas.</p>
-            </div>
-            } @else {
-            <div class="stops-header">
-                <h3 class="stops-title">
-                    <i class="pi pi-map-marker"></i>
-                    Paradas
-                    <span class="stops-count">{{ waypoints().length }}</span>
-                </h3>
-                @if (simRunning()) {
-                <span class="sim-badge"><i class="pi pi-spin pi-spinner" style="font-size:0.7rem"></i> Simulando…</span>
-                }
-            </div>
-
-            @if (isScheduled()) {
+          @if (isScheduled()) {
             <!-- SCHEDULED → start (US17: security checklist first) -->
             <div class="start-state">
-                <i class="pi pi-clock start-icon"></i>
-                <p>Viaje programado.<br>Completa el <strong>check de seguridad</strong> para comenzar.</p>
-                <button mat-flat-button [disabled]="isOffline()" (click)="openChecklist()">
-                    <i class="pi pi-shield"></i><span>Check de Seguridad</span>
-                </button>
+              <i class="pi pi-clock start-icon"></i>
+              <p>Viaje programado.<br>Completa el <strong>check de seguridad</strong> para comenzar.</p>
+              <button mat-flat-button [disabled]="isOffline()" (click)="openChecklist()">
+                <i class="pi pi-shield"></i><span>Check de Seguridad</span>
+              </button>
             </div>
-            } @else {
+          } @else {
             <!-- EN_ROUTE / COMPLETED → stop list -->
             <div class="stop-list">
-                @for (stop of stops(); track $index; let i = $index) {
+              @for (stop of stops(); track $index; let i = $index) {
                 <div class="stop-item" [class.done]="stop.done" [class.current]="stop.current"
                      [class.clickable]="isEnRoute() && i > currentWpIdx()" (click)="goToStop(i)">
-                    <div class="stop-num"
-                         [style.background]="stop.done ? '#22c55e' : stop.current ? '#E07A2B' : '#e5e7eb'"
-                         [style.color]="stop.done ? '#fff' : stop.current ? '#1a1a2e' : '#94a3b8'">
-                        @if (stop.done) { <i class="pi pi-check" style="font-size:9px"></i> } @else { <span>{{ i + 1 }}</span> }
-                    </div>
-                    <div class="stop-info">
-                        <span class="stop-name">{{ stop.name }}</span>
-                        @if (stop.current && isEnRoute()) {
-                        <span class="stop-badge current-badge"><i class="pi pi-circle-fill blink" style="font-size:0.45rem"></i> Aquí ahora</span>
-                        } @else if (stop.done) {
-                        <span class="stop-badge done-badge">Completada</span>
-                        }
-                    </div>
-                    @if (isEnRoute() && i > currentWpIdx()) { <i class="pi pi-arrow-right tap-hint"></i> }
+                  <div class="stop-num"
+                       [style.background]="stop.done ? '#22c55e' : stop.current ? '#E07A2B' : '#e5e7eb'"
+                       [style.color]="stop.done ? '#fff' : stop.current ? '#1a1a2e' : '#94a3b8'">
+                    @if (stop.done) { <i class="pi pi-check" style="font-size:9px"></i> } @else { <span>{{ i + 1 }}</span> }
+                  </div>
+                  <div class="stop-info">
+                    <span class="stop-name">{{ stop.name }}</span>
+                    @if (stop.current && isEnRoute()) {
+                      <span class="stop-badge current-badge"><i class="pi pi-circle-fill blink" style="font-size:0.45rem"></i> Aquí ahora</span>
+                    } @else if (stop.done) {
+                      <span class="stop-badge done-badge">Completada</span>
+                    }
+                  </div>
+                  @if (isEnRoute() && i > currentWpIdx()) { <i class="pi pi-arrow-right tap-hint"></i> }
                 </div>
-                }
+              }
             </div>
 
             <!-- US11.S1 — Per-student boarding panel -->
             @if (isEnRoute() && boardingStudents().length) {
-            <div class="boarding-panel">
+              <div class="boarding-panel">
                 <div class="boarding-title">
-                    <i class="pi pi-users"></i> Abordaje de alumnos
-                    <span class="boarding-count">{{ boardedCount() }}/{{ boardingStudents().length }}</span>
-                    <button class="qr-scan-btn" (click)="openQrScanner()" title="Escanear QR del alumno">
-                        <i class="pi pi-qrcode"></i> Escanear QR
-                    </button>
+                  <i class="pi pi-users"></i> Abordaje de alumnos
+                  <span class="boarding-count">{{ boardedCount() }}/{{ boardingStudents().length }}</span>
+                  <button class="qr-scan-btn" (click)="openQrScanner()" title="Escanear QR del alumno">
+                    <i class="pi pi-qrcode"></i> Escanear QR
+                  </button>
                 </div>
                 <div class="boarding-list">
-                    @for (child of boardingStudents(); track child.id) {
+                  @for (child of boardingStudents(); track child.id) {
                     <div class="boarding-row">
-                        <span class="boarding-name">{{ child.name }}</span>
-                        <div class="boarding-btns">
-                            <button class="b-btn aboard" [class.active]="child.mark === 'ABORDADO'" (click)="markBoarding(child.id, 'ABORDADO')">
-                                <i class="pi pi-check"></i>
-                            </button>
-                            <button class="b-btn absent" [class.active]="child.mark === 'AUSENTE'" (click)="markBoarding(child.id, 'AUSENTE')">
-                                <i class="pi pi-times"></i>
-                            </button>
-                        </div>
+                      <span class="boarding-name">{{ child.name }}</span>
+                      <div class="boarding-btns">
+                        <button class="b-btn aboard" [class.active]="child.mark === 'ABORDADO'" (click)="markBoarding(child.id, 'ABORDADO')">
+                          <i class="pi pi-check"></i>
+                        </button>
+                        <button class="b-btn absent" [class.active]="child.mark === 'AUSENTE'" (click)="markBoarding(child.id, 'AUSENTE')">
+                          <i class="pi pi-times"></i>
+                        </button>
+                      </div>
                     </div>
-                    }
+                  }
                 </div>
-            </div>
+              </div>
             }
 
             <div class="action-row">
-                @if (isEnRoute()) {
+              @if (isEnRoute()) {
                 <!-- US16 — Navigation -->
                 <button mat-stroked-button class="secondary w-full" (click)="openNavigation()">
-                    <i class="pi pi-map"></i><span>Navegar</span>
+                  <i class="pi pi-map"></i><span>Navegar</span>
                 </button>
                 <button mat-flat-button class="danger w-full" (click)="finishTrip()">
-                    <i class="pi pi-flag-fill"></i><span>Finalizar Viaje</span>
+                  <i class="pi pi-flag-fill"></i><span>Finalizar Viaje</span>
                 </button>
-                } @else if (isCompleted()) {
+              } @else if (isCompleted()) {
                 <div class="completed-banner"><i class="pi pi-check-circle"></i> Completado · selecciona otro viaje</div>
-                }
+              }
 
-                <!-- US13 — SOS Panic Button -->
-                @if (sosActive()) {
+              <!-- US13 — SOS Panic Button -->
+              @if (sosActive()) {
                 <div class="sos-active-banner">
-                    <i class="pi pi-exclamation-triangle sos-blink"></i>
-                    <span>🚨 SOS ACTIVO — Central notificada</span>
-                    <button class="sos-cancel-btn" (click)="cancelSos()">Cancelar</button>
+                  <i class="pi pi-exclamation-triangle sos-blink"></i>
+                  <span>🚨 SOS ACTIVO — Central notificada</span>
+                  <button class="sos-cancel-btn" (click)="cancelSos()">Cancelar</button>
                 </div>
-                } @else {
+              } @else {
                 <div class="sos-hold-wrap">
-                    <button class="sos-hold-btn w-full"
-                            (mousedown)="sosStart()" (mouseup)="sosEnd()" (mouseleave)="sosEnd()"
-                            (touchstart)="sosStart($event)" (touchend)="sosEnd($event)">
-                        <svg class="sos-ring" viewBox="0 0 36 36">
-                            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#fee2e2" stroke-width="2.5"/>
-                            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#DE4A26" stroke-width="2.5"
-                                    stroke-dasharray="100" [attr.stroke-dashoffset]="sosDashOffset()"
-                                    stroke-linecap="round" transform="rotate(-90 18 18)"
-                                    style="transition:stroke-dashoffset 0.04s linear"/>
-                        </svg>
-                        <i class="pi pi-exclamation-triangle sos-icon"></i>
-                        <span>{{ sosHolding() ? 'Suelta para cancelar…' : 'SOS — Mantén 3 seg' }}</span>
-                    </button>
+                  <button class="sos-hold-btn w-full"
+                          (mousedown)="sosStart()" (mouseup)="sosEnd()" (mouseleave)="sosEnd()"
+                          (touchstart)="sosStart($event)" (touchend)="sosEnd($event)">
+                    <svg class="sos-ring" viewBox="0 0 36 36">
+                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#fee2e2" stroke-width="2.5"/>
+                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#DE4A26" stroke-width="2.5"
+                              stroke-dasharray="100" [attr.stroke-dashoffset]="sosDashOffset()"
+                              stroke-linecap="round" transform="rotate(-90 18 18)"
+                              style="transition:stroke-dashoffset 0.04s linear"/>
+                    </svg>
+                    <i class="pi pi-exclamation-triangle sos-icon"></i>
+                    <span>{{ sosHolding() ? 'Suelta para cancelar…' : 'SOS — Mantén 3 seg' }}</span>
+                  </button>
                 </div>
-                }
+              }
             </div>
-            }
-            }
-        </div>
+          }
+        }
+      </div>
 
     </div>
-    }
+  }
 </div>
 
 <!-- US17 — Security Checklist Dialog -->
 <ng-template #checklistDialog>
-    <div class="kt-dialog-header"><h3>✅ Check de Seguridad Pre-Ruta</h3></div>
-    <div class="kt-dialog-body">
-        <p class="checklist-intro">Marca todos los ítems antes de iniciar el viaje.</p>
-        <div class="checklist-items">
-            @for (item of checklist; track item.id) {
-            <label class="checklist-row" [class.checked]="item.checked">
-                <mat-checkbox [(ngModel)]="item.checked"/>
-                <i [class]="item.icon + ' checklist-icon'"></i>
-                <span>{{ item.label }}</span>
-                @if (item.checked) { <i class="pi pi-check-circle checklist-ok"></i> }
-            </label>
-            }
-        </div>
-        @if (checklistComplete()) {
-        <div class="checklist-ready"><i class="pi pi-shield"></i> Todo en orden — listo para partir</div>
-        }
+  <div class="kt-dialog-header"><h3>✅ Check de Seguridad Pre-Ruta</h3></div>
+  <div class="kt-dialog-body">
+    <p class="checklist-intro">Marca todos los ítems antes de iniciar el viaje.</p>
+    <div class="checklist-items">
+      @for (item of checklist; track item.id) {
+        <label class="checklist-row" [class.checked]="item.checked">
+          <mat-checkbox [(ngModel)]="item.checked"/>
+          <i [class]="item.icon + ' checklist-icon'"></i>
+          <span>{{ item.label }}</span>
+          @if (item.checked) { <i class="pi pi-check-circle checklist-ok"></i> }
+        </label>
+      }
     </div>
-    <div class="kt-dialog-footer">
-        <button mat-button (click)="closeChecklist()">Cancelar</button>
-        <button mat-flat-button [disabled]="!checklistComplete()" (click)="confirmChecklist()">
-            <i class="pi pi-play"></i><span>Iniciar Viaje</span>
-        </button>
-    </div>
+    @if (checklistComplete()) {
+      <div class="checklist-ready"><i class="pi pi-shield"></i> Todo en orden — listo para partir</div>
+    }
+  </div>
+  <div class="kt-dialog-footer">
+    <button mat-button (click)="closeChecklist()">Cancelar</button>
+    <button mat-flat-button [disabled]="!checklistComplete()" (click)="confirmChecklist()">
+      <i class="pi pi-play"></i><span>Iniciar Viaje</span>
+    </button>
+  </div>
 </ng-template>

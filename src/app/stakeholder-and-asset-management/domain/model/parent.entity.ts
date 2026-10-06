@@ -1,6 +1,9 @@
 import { BaseEntity, EntityId } from '../../../shared/domain/model/base-entity';
 import { FullName } from '../../../shared/domain/model/full-name';
 
+/**
+ * Parent (guardian) within the Stakeholder bounded context.
+ */
 export class Parent implements BaseEntity {
   id: EntityId | null;
   name: string;

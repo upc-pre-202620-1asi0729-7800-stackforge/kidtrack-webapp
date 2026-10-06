@@ -1,0 +1,132 @@
+/* Global styles — KidTrack design tokens (palette from kidtrack-report, ch. 4 "Colores") */
+:root {
+  --navy: #1E3A63;     /* Azul marino — identity ("Track"), navigation, titles */
+  --orange: #E07A2B;   /* Naranja — identity ("Kid"), focal accent */
+  --accent: #DE4A26;   /* Naranja rojizo — alerts, absences, CTAs */
+  --bg:    #F4F7FA;
+  --dark: #1A1A2E;     /* Azul oscuro fondo — dark sections, headers */
+  --muted: #6B7280;    /* Gris neutro — body text, descriptions */
+  --green: #22C55E;    /* Confirmations / boarded */
+  --white: #FFFFFF;
+  --card:  #FFFFFF;
+
+  --text: #6B7280;
+  --text-h: #1A1A2E;
+  --border: #e5e4e7;
+  --code-bg: #f4f3ec;
+  --shadow:
+    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+
+  --sans:    'DM Sans', system-ui, 'Segoe UI', sans-serif;
+  --heading: 'Plus Jakarta Sans', system-ui, 'Segoe UI', sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 16px/150% var(--sans);
+  letter-spacing: 0.18px;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Light UI only: the KidTrack guide defines white as the main background, and every view
+   uses light cards, so the OS dark preference is intentionally not followed. */
+:root { color-scheme: light; }
+
+body {
+  margin: 0;
+  font-family: var(--sans);
+  background: var(--bg);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--heading);
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+h1 {
+  font-size: 56px;
+  letter-spacing: -1.68px;
+  margin: 32px 0;
+}
+h2 {
+  font-size: 24px;
+  line-height: 118%;
+  letter-spacing: -0.24px;
+  margin: 0 0 8px;
+}
+@media (max-width: 1024px) {
+  h1 { font-size: 36px; margin: 20px 0; }
+  h2 { font-size: 20px; }
+}
+p {
+  margin: 0;
+}
+
+kt-root {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Shared UI primitives (PrimeVue look-alikes) ───────────────────────── */
+
+/* Full-width Material form fields inside the KidTrack forms */
+.w-full.mat-mdc-form-field,
+.kt-field { width: 100%; }
+.mat-mdc-form-field.kt-field .mat-mdc-text-field-wrapper { background: #fff; }
+
+/* Button variants */
+.mat-mdc-button-base { font-family: var(--sans) !important; font-weight: 600 !important; letter-spacing: 0.1px !important; }
+.mat-mdc-button-base .pi { font-size: 0.9rem; }
+.mat-mdc-button-base.w-full { width: 100%; }
+.mdc-button .pi + span, .mdc-button .btn-label { margin-left: 0.45rem; }
+.mat-mdc-unelevated-button.secondary { --mat-button-filled-container-color: #e5e7eb; --mat-button-filled-label-text-color: #374151; }
+.mat-mdc-unelevated-button.success   { --mat-button-filled-container-color: #22c55e; --mat-button-filled-label-text-color: #fff; }
+.mat-mdc-unelevated-button.danger    { --mat-button-filled-container-color: #DE4A26; --mat-button-filled-label-text-color: #fff; }
+.mat-mdc-unelevated-button.warning   { --mat-button-filled-container-color: #f59e0b; --mat-button-filled-label-text-color: #1a1a2e; }
+.mat-mdc-button.danger, .mat-mdc-outlined-button.danger, .mat-mdc-icon-button.danger { --mat-button-text-label-text-color: #DE4A26; --mat-button-outlined-label-text-color: #DE4A26; --mat-button-outlined-outline-color: #DE4A26; --mat-icon-button-icon-color: #DE4A26; color: #DE4A26; }
+.mat-mdc-outlined-button.secondary { --mat-button-outlined-label-text-color: #4b5563; --mat-button-outlined-outline-color: #d1d5db; }
+.mat-mdc-icon-button.kt-icon-btn { --mat-icon-button-icon-color: var(--orange); color: var(--orange); width: 34px; height: 34px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.mat-mdc-icon-button.kt-icon-btn.danger { color: #DE4A26; }
+.mat-mdc-icon-button.kt-icon-btn .pi { font-size: 0.85rem; }
+.mat-mdc-button-base.small { --mat-button-filled-container-height: 32px; --mat-button-outlined-container-height: 32px; --mat-button-text-container-height: 32px; font-size: 0.8rem; }
+
+/* Tags (pv-tag) */
+.kt-tag {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem;
+  font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.55rem; border-radius: 6px;
+  line-height: 1.2;
+}
+.kt-tag.success { background: #dcfce7; color: #15803d; }
+.kt-tag.warn    { background: #fef3c7; color: #b45309; }
+.kt-tag.danger  { background: #fee2e2; color: #b91c1c; }
+.kt-tag.info    { background: #e0f2fe; color: #0369a1; }
+
+/* Generic text helpers used by the IAM forms */
+.text-red-500 { color: #DE4A26; }
+.field label { display: block; }
+
+/* Right-side drawer (pv-drawer) built on MatDialog */
+.kt-drawer-panel .mat-mdc-dialog-surface { border-radius: 0 !important; }
+.kt-drawer-panel { animation: srDrawerIn 0.25s ease-out; }
+@keyframes srDrawerIn { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* Dialog header shared look */
+.kt-dialog-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.1rem 1.5rem 0.6rem;
+}
+.kt-dialog-header h3 { margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--dark); }
+.kt-dialog-body   { padding: 0.5rem 1.5rem 1rem; }
+.kt-dialog-footer { display: flex; justify-content: flex-end; gap: 0.5rem; padding: 0.75rem 1.5rem 1.1rem; }
+
+/* Leaflet tooltips/popups use the app font */
+.leaflet-container { font-family: var(--sans); }
