@@ -1,0 +1,77 @@
+<div class="co-bg">
+  <div class="co-wrap">
+
+    <!-- Logo -->
+    <div class="co-logo">
+      <kt-logo [size]="36" [onDark]="true"/>
+    </div>
+
+    <!-- Sandbox pill -->
+    <div class="co-sandbox-pill">
+      <span class="co-dot"></span>
+      Sandbox — entorno de prueba
+    </div>
+
+    <!-- Card -->
+    <div class="co-card">
+      <h1 class="co-title">Finaliza tu suscripción</h1>
+      <p class="co-subtitle">Revisa tu plan y completa el pago de forma segura.</p>
+
+      <!-- Order summary -->
+      <div class="co-order">
+        <div class="co-order-label">Resumen de orden</div>
+        <div class="co-order-plan">{{ planName }}</div>
+        @if (planPrice) { <div class="co-order-price">{{ planPrice }} / mes</div> }
+      </div>
+
+      <hr class="co-divider"/>
+
+      @switch (status()) {
+        @case ('success') {
+          <div class="co-msg co-msg-success">
+            <span class="co-msg-icon">✅</span>
+            <div>
+              <strong>¡Pago realizado con éxito!</strong>
+              <p>Redirigiendo a tu cuenta en unos segundos…</p>
+            </div>
+          </div>
+        }
+        @case ('cancelled') {
+          <div class="co-msg co-msg-warn">
+            <span class="co-msg-icon">⚠️</span>
+            <div>
+              <strong>Pago cancelado</strong>
+              <p>Puedes intentarlo de nuevo cuando quieras.</p>
+            </div>
+          </div>
+        }
+        @case ('error') {
+          <div class="co-msg co-msg-error">
+            <span class="co-msg-icon">❌</span>
+            <div>
+              <strong>Error al procesar el pago</strong>
+              <p>Intenta nuevamente o elige otro método.</p>
+            </div>
+          </div>
+        }
+      }
+
+      <!-- PayPal (container stays in the DOM so the SDK can render into it) -->
+      <div [hidden]="status() === 'success'">
+        <div class="co-pay-label">Pagar con PayPal</div>
+        @if (!sdkReady() && status() !== 'error') {
+          <div class="co-spinner-wrap">
+            <div class="co-spinner"></div>
+            Cargando opciones de pago…
+          </div>
+        }
+        <div id="paypal-button-container"></div>
+      </div>
+
+      <div class="co-back-link">
+        <button class="co-btn-link" (click)="goBack()">← Volver</button>
+      </div>
+    </div>
+
+  </div>
+</div>

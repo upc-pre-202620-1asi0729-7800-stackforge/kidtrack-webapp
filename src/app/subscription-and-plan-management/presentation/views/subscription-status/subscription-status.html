@@ -1,0 +1,123 @@
+<div class="sub-status-page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Mi Suscripción</h1>
+      <p class="page-sub">Gestiona tu plan y facturación</p>
+    </div>
+    <button mat-stroked-button (click)="goToPlans()">
+      <i class="pi pi-list"></i><span>Ver Planes</span>
+    </button>
+  </div>
+
+  @if (store.loading() && !store.subscriptionLoaded()) {
+    <!-- Loading -->
+    <div class="loading-wrap">
+      <i class="pi pi-spin pi-spinner" style="font-size:2rem; color:var(--orange)"></i>
+    </div>
+  } @else if (!sub()) {
+    <!-- No subscription -->
+    <div class="empty-state">
+      <div class="empty-icon"><i class="pi pi-credit-card"></i></div>
+      <h3>Sin suscripción activa</h3>
+      <p>Elige un plan para empezar a digitalizar tu transporte escolar</p>
+      <button mat-flat-button (click)="goToPlans()"><i class="pi pi-bolt"></i><span>Ver Planes</span></button>
+    </div>
+  } @else {
+    <!-- Active subscription -->
+    <div class="sub-grid">
+
+      <!-- LEFT: plan card -->
+      <div class="plan-detail-card">
+        <div class="plan-header-row">
+          <div class="plan-icon-big" [style.background]="planColor() + '22'" [style.color]="planColor()">
+            <i [class]="planIcon()"></i>
+          </div>
+          <div>
+            <h2 class="plan-name">Plan {{ tierName() }}</h2>
+            <span class="status-pill" [style.background]="statusInfo().bg" [style.color]="statusInfo().color">
+              <i class="pi pi-circle-fill" style="font-size:0.5rem"></i> {{ statusInfo().label }}
+            </span>
+          </div>
+        </div>
+
+        <div class="price-row">
+          <span class="price-big">${{ plan()?.price ?? '—' }}</span>
+          <span class="price-per">/ mes</span>
+        </div>
+
+        <!-- Days remaining -->
+        <div class="days-block">
+          <div class="days-header">
+            <span>Días restantes</span>
+            <strong [style.color]="progressColor()">{{ remainingDays() ?? '—' }} días</strong>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" [style.width.%]="progressPct()" [style.background]="progressColor()"></div>
+          </div>
+        </div>
+
+        <!-- Dates -->
+        <div class="dates-row">
+          <div class="date-item">
+            <span class="date-label"><i class="pi pi-calendar"></i> Inicio</span>
+            <span class="date-value">{{ formatDate(sub()!.startDate) }}</span>
+          </div>
+          <div class="date-item">
+            <span class="date-label"><i class="pi pi-calendar-times"></i> Vence</span>
+            <span class="date-value">{{ formatDate(sub()!.endDate) }}</span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="card-actions">
+          <button mat-flat-button class="w-full" (click)="goToPlans()">
+            <i class="pi pi-arrow-up"></i><span>Cambiar Plan</span>
+          </button>
+          @if (sub()!.state === 'ACTIVE') {
+            <button mat-stroked-button class="w-full danger" (click)="onCancel()">
+              <i class="pi pi-times"></i><span>Cancelar Suscripción</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- RIGHT: features + org info -->
+      <div class="right-col">
+
+        <!-- Features included -->
+        <div class="features-card">
+          <h4 class="card-title"><i class="pi pi-check-circle"></i> Funcionalidades incluidas</h4>
+          <div class="features-grid">
+            @for (f of features(); track f) {
+              <div class="feature-chip"><i class="pi pi-check"></i> {{ f }}</div>
+            }
+          </div>
+        </div>
+
+        <!-- Org info -->
+        <div class="info-card">
+          <h4 class="card-title"><i class="pi pi-building"></i> Información de organización</h4>
+          <div class="info-row">
+            <span class="info-label">Organización</span>
+            <span class="info-value">{{ iamStore.organizationId() || '—' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">ID Suscripción</span>
+            <span class="info-value mono">{{ sub()!.id }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Estado</span>
+            <span class="info-value">
+              <span class="status-pill" [style.background]="statusInfo().bg" [style.color]="statusInfo().color">
+                {{ statusInfo().label }}
+              </span>
+            </span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  }
+</div>

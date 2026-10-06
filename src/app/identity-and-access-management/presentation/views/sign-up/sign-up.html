@@ -1,0 +1,41 @@
+<div class="auth-page">
+  <div class="auth-card wide">
+    <div class="auth-logo">
+      <h1 class="brand-name" aria-label="KidTrack"><kt-logo [size]="40"/></h1>
+    </div>
+
+    <h2 class="form-title">{{ 'identity-and-access-management.sign-up.title' | t }}</h2>
+
+    <!-- Plan banner (shown when arriving from landing plan selection) -->
+    @if (selectedPlan(); as plan) {
+      <div class="plan-banner">
+        <i class="pi pi-shield plan-banner-icon"></i>
+        Plan seleccionado:
+        <strong>{{ plan.name }} — {{ plan.price }}</strong>
+      </div>
+    }
+
+    <div class="steps mb-4">
+      <span class="step" [class.active]="adminStep() === 1" [class.done]="adminStep() > 1">
+        <i class="pi pi-building mr-1"></i>{{ 'identity-and-access-management.sign-up.step-organization' | t }}
+      </span>
+      <i class="pi pi-arrow-right mx-2" style="color:#aaa"></i>
+      <span class="step" [class.active]="adminStep() === 2">
+        <i class="pi pi-user mr-1"></i>{{ 'identity-and-access-management.sign-up.step-admin' | t }}
+      </span>
+    </div>
+
+    @if (adminStep() === 1) {
+      <kt-organization-form (organizationCreated)="onOrganizationCreated($event)"/>
+    } @else {
+      <kt-admin-register-form [organizationId]="createdOrganization()?.id?.toString() ?? null" (adminRegistered)="onRegistered()"/>
+    }
+
+    <div class="auth-footer mt-4">
+      <span>{{ 'identity-and-access-management.sign-up.have-account' | t }}</span>
+      <button mat-button type="button" class="link-btn" (click)="goToSignIn()">
+        {{ 'identity-and-access-management.actions.sign-in' | t }}
+      </button>
+    </div>
+  </div>
+</div>

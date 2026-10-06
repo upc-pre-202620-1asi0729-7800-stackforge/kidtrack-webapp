@@ -1,0 +1,491 @@
+<div class="community-mgmt">
+
+  <!-- Page header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Gestión de Comunidad</h1>
+      <p class="page-sub">Administra usuarios, conductores y flota</p>
+    </div>
+    <button mat-flat-button (click)="onAddClick()"><i class="pi pi-plus"></i><span>{{ addLabel() }}</span></button>
+  </div>
+
+  <!-- Section tabs -->
+  <div class="section-tabs">
+    <button class="section-tab" [class.active]="section() === 'users'" (click)="section.set('users')">
+      <i class="pi pi-users"></i> Usuarios
+    </button>
+    <button class="section-tab" [class.active]="section() === 'logistics'" (click)="section.set('logistics')">
+      <i class="pi pi-car"></i> Logística
+    </button>
+  </div>
+
+  <!-- ══════════════ USERS SECTION ══════════════ -->
+  @if (section() === 'users') {
+    <div class="sub-tabs">
+      <button class="sub-tab" [class.active]="userTab() === 'parents'" (click)="userTab.set('parents')">
+        Padres ({{ store.parents().length }})
+      </button>
+      <button class="sub-tab" [class.active]="userTab() === 'children'" (click)="userTab.set('children')">
+        Alumnos ({{ store.children().length }})
+      </button>
+    </div>
+
+    <!-- Parents with expandable children -->
+    @if (userTab() === 'parents') {
+      <div class="table-card">
+        <table mat-table [dataSource]="store.parents()" multiTemplateDataRows class="kt-table">
+          <ng-container matColumnDef="expander">
+            <th mat-header-cell *matHeaderCellDef class="col-expander"></th>
+            <td mat-cell *matCellDef="let p" class="col-expander">
+              <button class="expander-btn" (click)="toggleExpanded(p)" [attr.aria-expanded]="isExpanded(p)">
+                <i [class]="isExpanded(p) ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"></i>
+              </button>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef>Padre / Madre</th>
+            <td mat-cell *matCellDef="let p">
+              <div class="name-cell"><div class="avatar">{{ p.initials }}</div><span>{{ p.name }}</span></div>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="email">
+            <th mat-header-cell *matHeaderCellDef>Email</th>
+            <td mat-cell *matCellDef="let p">{{ p.email }}</td>
+          </ng-container>
+          <ng-container matColumnDef="phone">
+            <th mat-header-cell *matHeaderCellDef>Teléfono</th>
+            <td mat-cell *matCellDef="let p">{{ p.phone }}</td>
+          </ng-container>
+          <ng-container matColumnDef="children">
+            <th mat-header-cell *matHeaderCellDef>Hijos</th>
+            <td mat-cell *matCellDef="let p"><span class="count-badge">{{ childCount(p) }}</span></td>
+          </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Estado</th>
+            <td mat-cell *matCellDef="let p">
+              <span class="kt-tag" [class.success]="p.active" [class.danger]="!p.active">{{ p.active ? 'Activo' : 'Inactivo' }}</span>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="col-actions"></th>
+            <td mat-cell *matCellDef="let p" class="col-actions">
+              <div class="row-actions">
+                <button mat-icon-button class="kt-icon-btn" (click)="openEditParent(p)"><i class="pi pi-pencil"></i></button>
+                <button mat-icon-button class="kt-icon-btn danger" (click)="deleteParent(p)"><i class="pi pi-trash"></i></button>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Expansion -->
+          <ng-container matColumnDef="expandedDetail">
+            <td mat-cell *matCellDef="let p" [attr.colspan]="parentColumns.length" class="detail-cell">
+              @if (isExpanded(p)) {
+                <div class="expansion-panel">
+                  <div class="expansion-header">
+                    <h5 class="expansion-title"><i class="pi pi-users"></i> Alumnos de {{ p.name }}</h5>
+                  </div>
+                  @if (childCount(p) === 0) {
+                    <p class="empty-note">No hay alumnos registrados.</p>
+                  } @else {
+                    <table mat-table [dataSource]="store.childrenOf(p.id)" class="kt-table nested">
+                      <ng-container matColumnDef="name">
+                        <th mat-header-cell *matHeaderCellDef>Nombre del Alumno</th>
+                        <td mat-cell *matCellDef="let c">{{ c.name }}</td>
+                      </ng-container>
+                      <ng-container matColumnDef="grade">
+                        <th mat-header-cell *matHeaderCellDef>Grado/Sección</th>
+                        <td mat-cell *matCellDef="let c">{{ c.grade }}</td>
+                      </ng-container>
+                      <ng-container matColumnDef="boarding">
+                        <th mat-header-cell *matHeaderCellDef>Abordaje</th>
+                        <td mat-cell *matCellDef="let c"><span [class]="'kt-tag ' + boardingSeverityOf(c)">{{ boardingLabelOf(c) }}</span></td>
+                      </ng-container>
+                      <ng-container matColumnDef="status">
+                        <th mat-header-cell *matHeaderCellDef>Estado</th>
+                        <td mat-cell *matCellDef="let c">
+                          <span class="kt-tag" [class.success]="c.active" [class.danger]="!c.active">{{ c.active ? 'Activo' : 'Inactivo' }}</span>
+                        </td>
+                      </ng-container>
+                      <ng-container matColumnDef="actions">
+                        <th mat-header-cell *matHeaderCellDef class="col-actions"></th>
+                        <td mat-cell *matCellDef="let c" class="col-actions">
+                          <div class="row-actions">
+                            <button mat-icon-button class="kt-icon-btn" (click)="openEditChild(c)"><i class="pi pi-pencil"></i></button>
+                            <button mat-icon-button class="kt-icon-btn danger" (click)="deleteChild(c)"><i class="pi pi-trash"></i></button>
+                          </div>
+                        </td>
+                      </ng-container>
+                      <tr mat-header-row *matHeaderRowDef="nestedChildColumns"></tr>
+                      <tr mat-row *matRowDef="let c; columns: nestedChildColumns"></tr>
+                    </table>
+                  }
+                </div>
+              }
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="parentColumns"></tr>
+          <tr mat-row *matRowDef="let p; columns: parentColumns" [class.expanded-row]="isExpanded(p)"></tr>
+          <tr mat-row *matRowDef="let p; columns: ['expandedDetail']" class="detail-row" [class.collapsed]="!isExpanded(p)"></tr>
+        </table>
+      </div>
+    }
+
+    <!-- All children -->
+    @if (userTab() === 'children') {
+      <div class="table-card">
+        <table mat-table [dataSource]="store.children()" class="kt-table">
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef>Nombre del Alumno</th>
+            <td mat-cell *matCellDef="let c">{{ c.name }}</td>
+          </ng-container>
+          <ng-container matColumnDef="grade">
+            <th mat-header-cell *matHeaderCellDef>Grado/Sección</th>
+            <td mat-cell *matCellDef="let c">{{ c.grade }}</td>
+          </ng-container>
+          <ng-container matColumnDef="parent">
+            <th mat-header-cell *matHeaderCellDef>Padre/Madre</th>
+            <td mat-cell *matCellDef="let c">
+              <div class="name-cell">
+                <div class="avatar sm">{{ parentName(c).charAt(0) === '—' ? '?' : parentName(c).charAt(0) }}</div>
+                <span>{{ parentName(c) }}</span>
+              </div>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="boarding">
+            <th mat-header-cell *matHeaderCellDef>Abordaje</th>
+            <td mat-cell *matCellDef="let c"><span [class]="'kt-tag ' + boardingSeverityOf(c)">{{ boardingLabelOf(c) }}</span></td>
+          </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Estado</th>
+            <td mat-cell *matCellDef="let c">
+              <span class="kt-tag" [class.success]="c.active" [class.danger]="!c.active">{{ c.active ? 'Activo' : 'Inactivo' }}</span>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="col-actions wide"></th>
+            <td mat-cell *matCellDef="let c" class="col-actions wide">
+              <div class="row-actions">
+                <button mat-icon-button class="kt-icon-btn" (click)="showCarne(c)"><i class="pi pi-id-card"></i></button>
+                <button mat-icon-button class="kt-icon-btn" (click)="openEditChild(c)"><i class="pi pi-pencil"></i></button>
+                <button mat-icon-button class="kt-icon-btn danger" (click)="deleteChild(c)"><i class="pi pi-trash"></i></button>
+              </div>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="childColumns"></tr>
+          <tr mat-row *matRowDef="let c; columns: childColumns"></tr>
+        </table>
+      </div>
+    }
+  }
+
+  <!-- ══════════════ LOGISTICS SECTION ══════════════ -->
+  @if (section() === 'logistics') {
+    <div class="sub-tabs">
+      <button class="sub-tab" [class.active]="logTab() === 'drivers'" (click)="logTab.set('drivers')">
+        Conductores ({{ store.drivers().length }})
+      </button>
+      <button class="sub-tab" [class.active]="logTab() === 'fleet'" (click)="logTab.set('fleet')">
+        Flota ({{ fleetStore.vehicles().length }})
+      </button>
+    </div>
+
+    <!-- Drivers -->
+    @if (logTab() === 'drivers') {
+      <div class="table-card">
+        <table mat-table [dataSource]="store.drivers()" class="kt-table">
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef>Nombre</th>
+            <td mat-cell *matCellDef="let d">
+              <div class="name-cell"><div class="avatar">{{ d.initials }}</div><span>{{ d.fullName }}</span></div>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="license">
+            <th mat-header-cell *matHeaderCellDef>Licencia</th>
+            <td mat-cell *matCellDef="let d">{{ d.licenseNumber }}</td>
+          </ng-container>
+          <ng-container matColumnDef="vehicle">
+            <th mat-header-cell *matHeaderCellDef>Vehículo Asignado</th>
+            <td mat-cell *matCellDef="let d">
+              @if (vehicleFor(d); as vehicle) {
+                <span class="vehicle-badge"><i class="pi pi-car"></i> {{ vehicle.plate }}</span>
+              } @else {
+                <span class="empty-note">Sin asignar</span>
+              }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Estado</th>
+            <td mat-cell *matCellDef="let d">
+              <span class="kt-tag" [class.success]="d.active" [class.danger]="!d.active">{{ d.active ? 'Activo' : 'Inactivo' }}</span>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="col-actions"></th>
+            <td mat-cell *matCellDef="let d" class="col-actions">
+              <div class="row-actions">
+                <button mat-icon-button class="kt-icon-btn" (click)="openEditDriver(d)"><i class="pi pi-pencil"></i></button>
+                <button mat-icon-button class="kt-icon-btn danger" (click)="deleteDriver(d)"><i class="pi pi-trash"></i></button>
+              </div>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="driverColumns"></tr>
+          <tr mat-row *matRowDef="let d; columns: driverColumns"></tr>
+        </table>
+      </div>
+    }
+
+    <!-- Fleet -->
+    @if (logTab() === 'fleet') {
+      <div class="table-card">
+        <table mat-table [dataSource]="fleetStore.vehicles()" class="kt-table">
+          <ng-container matColumnDef="plate">
+            <th mat-header-cell *matHeaderCellDef>Placa</th>
+            <td mat-cell *matCellDef="let v">{{ v.plate }}</td>
+          </ng-container>
+          <ng-container matColumnDef="model">
+            <th mat-header-cell *matHeaderCellDef>Modelo</th>
+            <td mat-cell *matCellDef="let v">{{ v.model }}</td>
+          </ng-container>
+          <ng-container matColumnDef="capacity">
+            <th mat-header-cell *matHeaderCellDef>Capacidad</th>
+            <td mat-cell *matCellDef="let v">{{ v.capacity }} pasajeros</td>
+          </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Estado</th>
+            <td mat-cell *matCellDef="let v">
+              <span class="kt-tag" [class.success]="v.active" [class.danger]="!v.active">{{ v.active ? 'Activo' : 'Inactivo' }}</span>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="col-actions"></th>
+            <td mat-cell *matCellDef="let v" class="col-actions">
+              <div class="row-actions">
+                <button mat-icon-button class="kt-icon-btn" (click)="openEditVehicle(v)"><i class="pi pi-pencil"></i></button>
+                <button mat-icon-button class="kt-icon-btn danger" (click)="deleteVehicle(v)"><i class="pi pi-trash"></i></button>
+              </div>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="fleetColumns"></tr>
+          <tr mat-row *matRowDef="let v; columns: fleetColumns"></tr>
+        </table>
+      </div>
+    }
+  }
+</div>
+
+<!-- ── Parent Drawer (add / edit) ──────────────────── -->
+<ng-template #parentDrawer>
+  <div class="drawer">
+    <div class="kt-dialog-header">
+      <h3>{{ parentDrawerTitle }}</h3>
+      <button mat-icon-button (click)="closeDialog()"><i class="pi pi-times"></i></button>
+    </div>
+    <div class="drawer-form">
+      <div class="field">
+        <label>Nombre Completo *</label>
+        <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+          <input matInput [(ngModel)]="parentForm.name" placeholder="Ej: Juan Pérez">
+        </mat-form-field>
+      </div>
+      <div class="field">
+        <label>Email *</label>
+        <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+          <input matInput type="email" [ngModel]="parentForm.email" (ngModelChange)="onParentEmailChange($event)" placeholder="correo@ejemplo.com">
+        </mat-form-field>
+      </div>
+      @if (!parentForm.id) {
+        <div class="field">
+          <label>Contraseña</label>
+          <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+            <input matInput [(ngModel)]="parentForm.password" placeholder="Se auto-completa con el correo">
+          </mat-form-field>
+          <small class="field-hint">Se genera automáticamente desde el email. Puede modificarse. Se crea la cuenta de acceso del padre.</small>
+        </div>
+      }
+      <div class="field">
+        <label>Teléfono</label>
+        <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+          <input matInput [(ngModel)]="parentForm.phone" placeholder="Ej: 999-888-777">
+        </mat-form-field>
+      </div>
+      <div class="field field-switch">
+        <label>Estado Activo</label>
+        <mat-slide-toggle [(ngModel)]="parentForm.active" hideIcon/>
+      </div>
+
+      <div class="children-section">
+        <div class="children-header">
+          <h3 class="children-title">Alumnos</h3>
+          <button mat-stroked-button class="small" (click)="addFormChild()"><i class="pi pi-plus"></i><span>Añadir Alumno</span></button>
+        </div>
+        @if (parentForm.formChildren.length === 0) {
+          <p class="empty-note">No hay alumnos registrados para este padre.</p>
+        }
+        @for (child of parentForm.formChildren; track $index; let i = $index) {
+          <div class="child-row">
+            <div class="child-row-header">
+              <span class="child-label">Alumno #{{ i + 1 }}</span>
+              <button mat-icon-button class="kt-icon-btn danger" (click)="removeFormChild(i)"><i class="pi pi-trash"></i></button>
+            </div>
+            <div class="child-fields">
+              <div class="field">
+                <label>Nombre</label>
+                <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+                  <input matInput [(ngModel)]="child.name">
+                </mat-form-field>
+              </div>
+              <div class="field">
+                <label>Grado / Sección</label>
+                <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+                  <input matInput [(ngModel)]="child.grade">
+                </mat-form-field>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <button mat-flat-button class="w-full mt-4" [disabled]="saving()" (click)="saveParent()">
+        <i [class]="saving() ? 'pi pi-spin pi-spinner' : 'pi pi-check'"></i><span>Guardar</span>
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<!-- ── Child Dialog (add / edit standalone) ────────── -->
+<ng-template #childDialog>
+  <div class="kt-dialog-header">
+    <h3>{{ childDialogTitle }}</h3>
+    <button mat-icon-button (click)="closeDialog()"><i class="pi pi-times"></i></button>
+  </div>
+  <div class="kt-dialog-body">
+    <div class="drawer-form compact">
+      <div class="field">
+        <label>Nombre del Alumno *</label>
+        <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+          <input matInput [(ngModel)]="childForm.name">
+        </mat-form-field>
+      </div>
+      <div class="field">
+        <label>Grado / Sección</label>
+        <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+          <input matInput [(ngModel)]="childForm.grade">
+        </mat-form-field>
+      </div>
+      <div class="field">
+        <label>Padre / Madre</label>
+        <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+          <mat-select [(ngModel)]="childForm.parentId" placeholder="Seleccionar padre...">
+            <mat-option [value]="null">—</mat-option>
+            @for (p of store.parents(); track p.id) { <mat-option [value]="p.id">{{ p.name }}</mat-option> }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="field mt-2">
+        <label>Fotografía del Alumno</label>
+        <button mat-flat-button class="w-full" [class.success]="childHasPhoto()" [class.secondary]="!childHasPhoto()" (click)="uploadPhotoMock()">
+          <i class="pi pi-camera"></i><span>{{ childHasPhoto() ? 'Foto Subida' : 'Tomar / Subir Foto' }}</span>
+        </button>
+      </div>
+      <div class="field">
+        <label>Estado de Abordaje</label>
+        <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+          <mat-select [(ngModel)]="childForm.boardingStatus">
+            @for (o of boardingOptions; track o.value) { <mat-option [value]="o.value">{{ o.label }}</mat-option> }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="field field-switch">
+        <label>Estado Activo</label>
+        <mat-slide-toggle [(ngModel)]="childForm.active" hideIcon/>
+      </div>
+    </div>
+  </div>
+  <div class="kt-dialog-footer">
+    <button mat-button (click)="closeDialog()">Cancelar</button>
+    <button mat-flat-button (click)="saveChild()"><i class="pi pi-check"></i><span>Guardar</span></button>
+  </div>
+</ng-template>
+
+<!-- ── Digital ID Card Dialog ────────── -->
+<ng-template #carneDialog>
+  <div class="kt-dialog-header">
+    <h3>Carné Digital</h3>
+    <button mat-icon-button (click)="closeDialog()"><i class="pi pi-times"></i></button>
+  </div>
+  <div class="carne-card">
+    <div class="carne-photo">
+      @if (carneData?.hasPhoto) {
+        <img src="https://ui-avatars.com/api/?name=Student&background=random&color=fff&size=100" alt="Foto del alumno" style="border-radius:50%; width:100px; height:100px"/>
+      } @else {
+        <div class="carne-placeholder"><i class="pi pi-user"></i></div>
+      }
+    </div>
+    <h2 class="carne-name">{{ carneData?.name }}</h2>
+    <p class="carne-grade">Grado: {{ carneData?.grade }}</p>
+    <span class="kt-tag success carne-tag"><i class="pi pi-check"></i> ESTUDIANTE ACTIVO</span>
+  </div>
+</ng-template>
+
+<!-- ── Logistics Drawer (add / edit) ────────── -->
+<ng-template #logDrawer>
+  <div class="drawer">
+    <div class="kt-dialog-header">
+      <h3>{{ logDrawerTitle }}</h3>
+      <button mat-icon-button (click)="closeDialog()"><i class="pi pi-times"></i></button>
+    </div>
+    <div class="drawer-form">
+      <div class="field">
+        <label>{{ logTab() === 'drivers' ? 'Nombre Completo' : 'Placa del Vehículo' }}</label>
+        <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+          <input matInput [(ngModel)]="logForm.nameOrPlate">
+        </mat-form-field>
+      </div>
+      <div class="field">
+        <label>{{ logTab() === 'drivers' ? 'Licencia de Conducir' : 'Modelo' }}</label>
+        <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+          <input matInput [(ngModel)]="logForm.licenseOrModel">
+        </mat-form-field>
+      </div>
+      @if (logTab() === 'drivers') {
+        <div class="field mt-2">
+          <label>Documento de Licencia</label>
+          <div style="display:flex; gap:0.5rem; align-items:center">
+            <button mat-flat-button [class.success]="licenseVerified()" [class.secondary]="!licenseVerified()" [disabled]="licenseVerified()" (click)="uploadLicenseMock()">
+              <i class="pi pi-upload"></i><span>{{ licenseVerified() ? 'Licencia Subida' : 'Subir PDF/Foto' }}</span>
+            </button>
+            @if (licenseVerified()) {
+              <span class="kt-tag success"><i class="pi pi-check"></i> Verificado</span>
+            } @else {
+              <span class="kt-tag warn">Pendiente</span>
+            }
+          </div>
+        </div>
+        <div class="field">
+          <label>Asignar Vehículo (Opcional)</label>
+          <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+            <mat-select [(ngModel)]="logForm.vehicleId" placeholder="Seleccionar vehículo...">
+              <mat-option [value]="null">—</mat-option>
+              @for (v of fleetStore.vehicles(); track v.id) {
+                <mat-option [value]="v.id"><i class="pi pi-car mr-2"></i>{{ v.plate }} — {{ v.model }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+      } @else {
+        <div class="field">
+          <label>Capacidad (pasajeros)</label>
+          <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+            <input matInput type="number" [(ngModel)]="logForm.capacity">
+          </mat-form-field>
+        </div>
+      }
+      <div class="field field-switch">
+        <label>Estado Activo</label>
+        <mat-slide-toggle [(ngModel)]="logForm.active" hideIcon/>
+      </div>
+      <button mat-flat-button class="w-full mt-4" (click)="saveLog()"><i class="pi pi-check"></i><span>Guardar</span></button>
+    </div>
+  </div>
+</ng-template>

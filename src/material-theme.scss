@@ -1,0 +1,54 @@
+@use '@angular/material' as mat;
+
+// Angular Material theme with the KidTrack palette (report ch. 4 — orange #E07A2B primary,
+// navy #1E3A63, red-orange #DE4A26 for alerts). Dark text on orange keeps a 5.7:1 contrast.
+html {
+  color-scheme: light;
+
+  @include mat.theme((
+    color: (
+      primary: mat.$orange-palette,
+      tertiary: mat.$blue-palette,
+      theme-type: light,
+    ),
+    typography: (
+      plain-family: 'DM Sans, system-ui, Segoe UI, sans-serif',
+      brand-family: 'Plus Jakarta Sans, system-ui, Segoe UI, sans-serif',
+    ),
+    density: -2,
+  ));
+
+  @include mat.theme-overrides((
+    primary: #E07A2B,
+    on-primary: #1A1A2E,
+    primary-container: #fdf2e9,
+    on-primary-container: #1A1A2E,
+    surface: #ffffff,
+    surface-container: #ffffff,
+    surface-container-high: #ffffff,
+    surface-container-highest: #f3f4f6,
+    surface-container-low: #ffffff,
+    error: #DE4A26,
+  ));
+
+  @include mat.button-overrides((
+    filled-container-shape: 6px,
+    outlined-container-shape: 6px,
+    text-container-shape: 6px,
+    protected-container-shape: 6px,
+  ));
+
+  @include mat.form-field-overrides((
+    outlined-container-shape: 6px,
+  ));
+
+  @include mat.dialog-overrides((
+    container-shape: 12px,
+  ));
+
+  @include mat.button-toggle-overrides((
+    shape: 6px,
+    selected-state-background-color: #E07A2B,
+    selected-state-text-color: #1A1A2E,
+  ));
+}

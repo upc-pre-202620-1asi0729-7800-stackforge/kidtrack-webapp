@@ -1,0 +1,62 @@
+<div class="home-view p-4">
+  <div class="welcome-header mb-5">
+    <h1>{{ 'home.greeting' | t: { name: user()?.firstName || '' } }}</h1>
+    <span class="role-badge"><i [class]="roleIcon() + ' mr-1'"></i>{{ roleLabel() }}</span>
+  </div>
+
+  <!-- Metrics row -->
+  <div class="metrics-row mb-5">
+    @for (m of metrics(); track m.label) {
+      <div class="metric-card">
+        <i [class]="m.icon + ' metric-icon'"></i>
+        <span class="metric-value">{{ m.value }}</span>
+        <span class="metric-label">{{ m.label }}</span>
+      </div>
+    }
+  </div>
+
+  @switch (role()) {
+    <!-- ADMIN dashboard -->
+    @case ('ADMIN') {
+      <div class="admin-dashboard">
+        <h2 class="actions-title">What would you like to do?</h2>
+        <div class="dashboard-grid">
+          @for (card of adminCards; track card.title) {
+            <div class="dash-card" (click)="go(card)">
+              <i [class]="card.icon + ' dash-icon'"></i>
+              <h3>{{ card.title }}</h3>
+              <p>{{ card.desc }}</p>
+            </div>
+          }
+        </div>
+      </div>
+    }
+    <!-- DRIVER dashboard -->
+    @case ('DRIVER') {
+      <div class="dashboard-grid">
+        @for (card of driverCards; track card.title) {
+          <div class="dash-card" (click)="go(card)">
+            <i [class]="card.icon + ' dash-icon'"></i>
+            <h3>{{ card.title | t }}</h3>
+            <p>{{ card.desc | t }}</p>
+          </div>
+        }
+      </div>
+    }
+    <!-- PARENT dashboard -->
+    @case ('PARENT') {
+      <div class="admin-dashboard">
+        <h2 class="actions-title">What would you like to do?</h2>
+        <div class="dashboard-grid">
+          @for (card of parentCards; track card.title) {
+            <div class="dash-card" (click)="go(card)">
+              <i [class]="card.icon + ' dash-icon'"></i>
+              <h3>{{ card.title }}</h3>
+              <p>{{ card.desc }}</p>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  }
+</div>
