@@ -19,6 +19,13 @@ jobs:
         with:
           submodules: true
           lfs: false
+      - name: Inject API keys
+        env:
+          ORS_API_KEY: ${{ secrets.ORS_API_KEY }}
+          PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
+        run: |
+          sed -i "s|YOUR_OPENROUTESERVICE_API_KEY|$ORS_API_KEY|" src/environments/environment.ts
+          sed -i "s|YOUR_PAYPAL_SANDBOX_CLIENT_ID|$PAYPAL_CLIENT_ID|" src/environments/environment.ts
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
