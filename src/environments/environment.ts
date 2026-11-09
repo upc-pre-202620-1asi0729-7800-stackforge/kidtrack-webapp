@@ -3,7 +3,7 @@
  * (../kidtrack-api, `npm start` → http://localhost:3000/api/v1).
  */
 export const environment = {
-  apiBaseUrl: 'https://kidtrack-mockapi-abh4gyegc5byhbb7.centralus-01.azurewebsites.net/api/v1',
+  apiBaseUrl: 'https://kidtrack-platform-amfpcyand9b8hrdz.chilecentral-01.azurewebsites.net/api/v1',
 
   // Endpoint paths per bounded context
   signInEndpointPath: '/authentication/sign-in',
