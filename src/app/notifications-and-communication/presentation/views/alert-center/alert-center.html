@@ -48,6 +48,9 @@
 
     <div class="incident-list">
       @for (inc of filteredIncidents(); track inc.id) {
+        @if (inc.isEmergency && (inc.status === 'OPEN' || canActOnEmergencies())) {
+          <kt-emergency-panel [incident]="inc" [canAct]="canActOnEmergencies()" [canResolve]="isAdmin()" />
+        } @else {
         <div class="incident-card" [class.resolved]="inc.status === 'RESOLVED'">
           <div class="inc-icon-col">
             <div class="inc-icon" [style.background]="inc.severityColor + '22'" [style.color]="inc.severityColor">
@@ -73,6 +76,7 @@
             </div>
           }
         </div>
+        }
       }
     </div>
   }

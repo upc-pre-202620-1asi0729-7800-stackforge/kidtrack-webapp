@@ -1,13 +1,18 @@
 import { BaseEntity, EntityId } from '../../../shared/domain/model/base-entity';
 
-export type NotificationType = 'ABORDAJE' | 'PROXIMIDAD' | 'AUSENCIA' | 'LLEGADA' | 'RETRASO';
+export type NotificationType =
+  | 'ABORDAJE' | 'PROXIMIDAD' | 'AUSENCIA' | 'LLEGADA' | 'RETRASO'
+  | 'ENTREGA' | 'NO_ENTREGADO' | 'EMERGENCIA' | 'ACTUALIZACION';
 
 const ICONS: Record<NotificationType, string> = {
   ABORDAJE: 'pi pi-check-circle', PROXIMIDAD: 'pi pi-map-marker',
   AUSENCIA: 'pi pi-times-circle', LLEGADA: 'pi pi-flag', RETRASO: 'pi pi-clock',
+  ENTREGA: 'pi pi-verified', NO_ENTREGADO: 'pi pi-ban', EMERGENCIA: 'pi pi-exclamation-triangle',
+  ACTUALIZACION: 'pi pi-info-circle',
 };
 const COLORS: Record<NotificationType, string> = {
   ABORDAJE: '#22c55e', PROXIMIDAD: '#f59e0b', AUSENCIA: '#DE4A26', LLEGADA: '#1E3A63', RETRASO: '#f97316',
+  ENTREGA: '#16a34a', NO_ENTREGADO: '#DE4A26', EMERGENCIA: '#b91c1c', ACTUALIZACION: '#1E3A63',
 };
 const TITLES: Record<NotificationType, string> = {
   ABORDAJE: 'Abordaje confirmado',
@@ -15,6 +20,10 @@ const TITLES: Record<NotificationType, string> = {
   AUSENCIA: 'Alumno ausente',
   LLEGADA: 'Bus llegó a destino',
   RETRASO: 'Retraso en ruta',
+  ENTREGA: 'Alumno entregado',
+  NO_ENTREGADO: 'Alumno no entregado',
+  EMERGENCIA: 'Emergencia en ruta',
+  ACTUALIZACION: 'Actualización de la emergencia',
 };
 
 /**

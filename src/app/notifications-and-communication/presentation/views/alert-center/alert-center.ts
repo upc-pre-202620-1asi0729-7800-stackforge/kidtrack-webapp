@@ -12,6 +12,7 @@ import { TripStore } from '../../../../trip-execution-and-monitoring/application
 import {
   INCIDENT_TYPES, Incident, IncidentSeverity, IncidentStatus, IncidentType,
 } from '../../../../trip-execution-and-monitoring/domain/model/incident.entity';
+import { EmergencyPanel } from '../../../../trip-execution-and-monitoring/presentation/components/emergency-panel/emergency-panel';
 import { NotificationStore } from '../../../application/notification.store';
 import { Notification } from '../../../domain/model/notification.entity';
 
@@ -25,7 +26,9 @@ interface IncidentForm { tripId: EntityId | null; type: IncidentType; severity: 
  */
 @Component({
   selector: 'kt-alert-center',
-  imports: [FormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatSelectModule],
+  imports: [
+    FormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatSelectModule, EmergencyPanel,
+  ],
   templateUrl: './alert-center.html',
   styleUrl: './alert-center.css',
 })
@@ -50,6 +53,8 @@ export class AlertCenter implements OnInit {
   ];
 
   protected readonly isAdmin = this.iamStore.isAdmin;
+  /** Parents only read; drivers and administrators follow up emergencies. */
+  protected readonly canActOnEmergencies = computed(() => this.iamStore.currentUser()?.roleTier !== 'PARENT');
   protected readonly activeTab = signal<Tab>('incidents');
   protected readonly filterStatus = signal<IncidentStatus | 'ALL'>('ALL');
   protected readonly filterSeverity = signal<IncidentSeverity | 'ALL'>('ALL');
