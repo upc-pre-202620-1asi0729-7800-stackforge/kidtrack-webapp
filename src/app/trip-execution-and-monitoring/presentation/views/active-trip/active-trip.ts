@@ -15,14 +15,18 @@ import { ToastService } from '../../../../shared/application/toast.service';
 import { LIMA, LatLngTuple, MapService } from '../../../../shared/infrastructure/map.service';
 import { StakeholderStore } from '../../../../stakeholder-and-asset-management/application/stakeholder.store';
 import { TripStore } from '../../../application/trip.store';
-import { Incident } from '../../../domain/model/incident.entity';
+import { EMERGENCY_TYPES, EmergencyType, Incident } from '../../../domain/model/incident.entity';
 import { Trip, tripStatusMeta } from '../../../domain/model/trip.entity';
 import { BoardingScanner, BoardingScannerData } from '../../components/boarding-scanner/boarding-scanner';
+import { EmergencyPanel } from '../../components/emergency-panel/emergency-panel';
 
 type BoardingMark = 'ABORDADO' | 'AUSENTE';
 
 const STEP_MS = environment.simulationStepMs || 2000;
 const SOS_HOLD_MS = 3000;
+const REFRESH_MS = 10000;
+/** Value of the delivery dialog when the person at the stop is not registered. */
+const NOT_REGISTERED = 'NOT_REGISTERED';
 
 // Inline SVG car icon — no font dependency, always renders
 const CAR_SVG = `
@@ -54,11 +58,12 @@ function bearing(a: LatLngTuple, b: LatLngTuple): number {
 
 /**
  * Driver's real-time operational view: active route on the map, stop progress,
- * student boarding checklist (manual + QR), SOS and trip lifecycle.
+ * student boarding checklist (manual + QR), delivery to registered persons, SOS emergencies
+ * and trip lifecycle.
  */
 @Component({
   selector: 'kt-active-trip',
-  imports: [FormsModule, MatButtonModule, MatCheckboxModule, MatDialogModule],
+  imports: [FormsModule, MatButtonModule, MatCheckboxModule, MatDialogModule, EmergencyPanel],
   templateUrl: './active-trip.html',
   styleUrl: './active-trip.css',
 })
@@ -75,6 +80,10 @@ export class ActiveTrip implements AfterViewInit, OnDestroy {
 
   private readonly checklistTpl = viewChild.required<TemplateRef<unknown>>('checklistDialog');
   private checklistRef: MatDialogRef<unknown> | null = null;
+  private readonly handoverTpl = viewChild.required<TemplateRef<unknown>>('handoverDialog');
+  private handoverRef: MatDialogRef<unknown> | null = null;
+  private readonly emergencyTpl = viewChild.required<TemplateRef<unknown>>('emergencyDialog');
+  private emergencyRef: MatDialogRef<unknown> | null = null;
 
   // ── State ────────────────────────────────────────────────────────────────
   protected readonly loading = signal(true);
@@ -113,7 +122,10 @@ export class ActiveTrip implements AfterViewInit, OnDestroy {
     const marks = this.boardingState();
     return this.stakeholderStore.children()
       .filter(c => ids.includes(String(c.id)))
-      .map(c => ({ id: String(c.id), name: c.name, parentId: c.parentId, mark: marks[String(c.id)] ?? null }));
+      .map(c => ({
+        id: String(c.id), name: c.name, parentId: c.parentId, mark: marks[String(c.id)] ?? null,
+        handover: this.tripStore.handoverOf(this.tripData()?.id, c.id!),
+      }));
   });
   protected readonly boardedCount = computed(() => Object.values(this.boardingState()).filter(s => s === 'ABORDADO').length);
 
@@ -126,12 +138,22 @@ export class ActiveTrip implements AfterViewInit, OnDestroy {
     { id: 'extintor', label: 'Extintor vigente', icon: 'pi pi-shield', checked: false },
   ];
 
-  // ── US13 — SOS panic button ──────────────────────────────────────────────
+  // ── Delivery: only a registered person may receive a student ─────────────
+  protected readonly notRegistered = NOT_REGISTERED;
+  protected handoverChild: { id: string; name: string } | null = null;
+  protected receiverChoice = '';
+  protected unknownReceiverName = '';
+  protected readonly saving = signal(false);
+
+  // ── US13 — SOS panic button and force majeure emergencies ────────────────
+  protected readonly emergencyTypes = EMERGENCY_TYPES;
   protected readonly sosHolding = signal(false);
   protected readonly sosProgress = signal(0);
-  protected readonly sosActive = signal(false);
+  protected readonly openEmergency = computed(() => this.tripStore.openEmergencyOf(this.tripData()?.id));
+  protected emergencyForm = this.emptyEmergencyForm();
   private sosTimer: ReturnType<typeof setTimeout> | undefined;
   private sosProgressTimer: ReturnType<typeof setInterval> | undefined;
+  private refreshTimer: ReturnType<typeof setInterval> | undefined;
 
   // ── Map / simulation internals ───────────────────────────────────────────
   private map: L.Map | null = null;
@@ -158,7 +180,12 @@ export class ActiveTrip implements AfterViewInit, OnDestroy {
       this.tripStore.loadTrips(orgId),
       this.fleetStore.loadRoutes(orgId),
       this.stakeholderStore.loadAll(orgId),
+      this.stakeholderStore.loadAuthorizedPersons(orgId),
+      this.tripStore.loadHandovers(orgId),
+      this.tripStore.loadIncidents(orgId),
     ]);
+    // The administrator may add news or close an emergency while the driver is on this screen.
+    this.refreshTimer = setInterval(() => void this.tripStore.loadIncidents(orgId), REFRESH_MS);
     this.loading.set(false);
     // The map container is rendered once loading is false.
     setTimeout(async () => {
@@ -178,7 +205,10 @@ export class ActiveTrip implements AfterViewInit, OnDestroy {
     this.pauseSim();
     clearTimeout(this.sosTimer);
     clearInterval(this.sosProgressTimer);
+    clearInterval(this.refreshTimer);
     this.checklistRef?.close();
+    this.handoverRef?.close();
+    this.emergencyRef?.close();
     this.map?.remove();
     this.map = null;
   }
@@ -335,8 +365,8 @@ export class ActiveTrip implements AfterViewInit, OnDestroy {
     }
     if (wp) this.map?.panTo([wp.lat, wp.lng], { animate: true, duration: 0.3 });
 
-    if (wpIdx > 0 && wpIdx < n - 1 && trip?.tripType === 'RETURN') {
-      this.toast.add({ severity: 'success', summary: 'Hijo entregado', detail: `Alumno entregado en parada: ${wp?.name}` });
+    if (wpIdx > 0 && trip?.tripType === 'RETURN') {
+      this.toast.add({ severity: 'info', summary: 'Parada de entrega', detail: `${wp?.name}: registra quién recibe a cada alumno.`, life: 5000 });
     }
     if (n > 0 && wpIdx === n - 2) {
       this.toast.add({ severity: 'warn', summary: '¡El bus está por llegar!', detail: `Próxima y última parada: ${wps[n - 1]?.name}. ¡Prepárate!`, life: 6000 });
@@ -449,6 +479,17 @@ export class ActiveTrip implements AfterViewInit, OnDestroy {
   }
 
   protected finishTrip(): void {
+    if (this.openEmergency()) {
+      this.toast.add({ severity: 'warn', summary: 'Emergencia en curso', detail: 'El administrador debe cerrarla antes de finalizar el viaje.', life: 5000 });
+      return;
+    }
+    const pending = this.tripData()?.tripType === 'RETURN'
+      ? this.boardingStudents().filter(s => s.mark !== 'AUSENTE' && !s.handover)
+      : [];
+    if (pending.length) {
+      this.toast.add({ severity: 'warn', summary: 'Falta registrar la entrega', detail: `Indica quién recibe a: ${pending.map(s => s.name).join(', ')}.`, life: 6000 });
+      return;
+    }
     const lastIdx = this.waypoints().length - 1;
     const notFinished = this.currentWpIdx() < lastIdx;
     this.confirm.require({
@@ -476,7 +517,10 @@ export class ActiveTrip implements AfterViewInit, OnDestroy {
         this.currentWpIdx.set(lastIdx);
         if (last) this.placeBusAt([last.lat, last.lng]);
         this.refreshStopColors();
-        this.toast.add({ severity: 'success', summary: '¡Viaje finalizado!', detail: 'Todos los alumnos entregados. Puedes seleccionar otro viaje.', life: 5000 });
+        const notDelivered = this.boardingStudents().filter(s => s.handover && !s.handover.delivered);
+        this.toast.add(notDelivered.length
+          ? { severity: 'warn', summary: 'Viaje finalizado', detail: `No entregados: ${notDelivered.map(s => s.name).join(', ')}. Sus padres fueron avisados.`, life: 6000 }
+          : { severity: 'success', summary: '¡Viaje finalizado!', detail: 'Puedes seleccionar otro viaje.', life: 5000 });
       },
     });
   }
@@ -503,12 +547,12 @@ export class ActiveTrip implements AfterViewInit, OnDestroy {
   // ── US13 — SOS (hold 3 s) ────────────────────────────────────────────────
   protected sosStart(event?: Event): void {
     event?.preventDefault();
-    if (this.sosActive()) return;
+    if (this.openEmergency()) return;
     this.sosHolding.set(true);
     this.sosProgress.set(0);
     const t0 = Date.now();
     this.sosProgressTimer = setInterval(() => this.sosProgress.set(Math.min(100, ((Date.now() - t0) / SOS_HOLD_MS) * 100)), 40);
-    this.sosTimer = setTimeout(() => void this.triggerSos(), SOS_HOLD_MS);
+    this.sosTimer = setTimeout(() => this.openEmergencyDialog(), SOS_HOLD_MS);
   }
 
   protected sosEnd(event?: Event): void {
@@ -522,31 +566,67 @@ export class ActiveTrip implements AfterViewInit, OnDestroy {
     if (cancelled) this.toast.add({ severity: 'info', summary: 'Cancelado', detail: 'Mantén 3 segundos para activar el SOS.', life: 2000 });
   }
 
-  private async triggerSos(): Promise<void> {
-    clearInterval(this.sosProgressTimer);
-    this.sosHolding.set(false);
-    this.sosProgress.set(100);
-    this.sosActive.set(true);
-    const trip = this.tripData();
-    const wp = this.waypoints()[Math.max(0, this.currentWpIdx())];
-    const user = this.iamStore.currentUser();
-    await this.tripStore.reportIncident(new Incident({
-      tripId: trip?.id ?? null,
-      routeId: trip?.routeId ?? null,
-      routeName: trip?.routeName ?? '',
-      type: 'EMERGENCIA',
-      severity: 'HIGH',
-      description: `🚨 SOS activado por ${user?.firstName || 'Conductor'}. Ubicación: ${wp?.name || trip?.currentStop || 'En ruta'}. Coord: ${wp?.lat ?? '—'}, ${wp?.lng ?? '—'}`,
-      reportedBy: String(user?.id ?? 'DRIVER'),
-      organizationId: this.iamStore.organizationId(),
-    }));
-    this.toast.add({ severity: 'error', summary: '🚨 SOS ACTIVADO', detail: 'Alerta enviada con coordenadas GPS. Central notificada.', life: 10000 });
+  private emptyEmergencyForm() {
+    return {
+      type: null as EmergencyType | null,
+      location: '',
+      detail: '',
+      studentsState: 'UNKNOWN' as 'UNKNOWN' | 'SAFE' | 'NEEDS_CARE',
+      aboard: {} as Record<string, boolean>,
+    };
   }
 
-  protected cancelSos(): void {
-    this.sosActive.set(false);
+  private openEmergencyDialog(): void {
+    clearInterval(this.sosProgressTimer);
+    this.sosHolding.set(false);
     this.sosProgress.set(0);
-    this.toast.add({ severity: 'info', summary: 'SOS desactivado', detail: 'La alerta de emergencia fue cancelada.' });
+    this.pauseSim();
+    const wp = this.waypoints()[Math.max(0, this.currentWpIdx())];
+    // Students marked as aboard; when none is marked, everyone who is not absent. Delivered ones are left out.
+    const remaining = this.boardingStudents().filter(s => !s.handover?.delivered && s.mark !== 'AUSENTE');
+    const marked = remaining.filter(s => s.mark === 'ABORDADO');
+    this.emergencyForm = this.emptyEmergencyForm();
+    this.emergencyForm.location = wp?.name ?? this.tripData()?.currentStop ?? '';
+    for (const student of marked.length ? marked : remaining) this.emergencyForm.aboard[student.id] = true;
+    this.emergencyRef = this.dialog.open(this.emergencyTpl(), { width: '480px', disableClose: true, autoFocus: false });
+  }
+
+  protected closeEmergencyDialog(): void {
+    this.emergencyRef?.close();
+  }
+
+  protected hasStudentsAboard(): boolean {
+    return Object.values(this.emergencyForm.aboard).some(Boolean);
+  }
+
+  protected async declareEmergency(): Promise<void> {
+    const trip = this.tripData();
+    const form = this.emergencyForm;
+    const type = this.emergencyTypes.find(t => t.value === form.type);
+    if (!trip?.id || !type || !this.hasStudentsAboard()) return;
+    const user = this.iamStore.currentUser();
+    this.saving.set(true);
+    const created = await this.tripStore.reportIncident(new Incident({
+      tripId: trip.id,
+      routeId: trip.routeId,
+      routeName: trip.routeName,
+      type: 'EMERGENCIA',
+      severity: 'HIGH',
+      description: form.detail.trim() || `SOS activado por ${user?.firstName || 'el conductor'}: ${type.label}.`,
+      reportedBy: user ? `${user.firstName} ${user.lastName}`.trim() : 'Conductor',
+      organizationId: this.iamStore.organizationId(),
+      emergencyType: type.value,
+      location: form.location.trim(),
+      studentIds: Object.keys(form.aboard).filter(id => form.aboard[id]),
+      studentsSafe: form.studentsState === 'UNKNOWN' ? null : form.studentsState === 'SAFE',
+    }));
+    this.saving.set(false);
+    if (!created) {
+      this.toast.add({ severity: 'error', summary: 'No se envió la alerta', detail: `Intenta de nuevo y llama a ${type.service} (${type.phone}).`, life: 10000 });
+      return;
+    }
+    this.closeEmergencyDialog();
+    this.toast.add({ severity: 'error', summary: '🚨 Emergencia reportada', detail: `Se avisó a la central y a los padres. Llama a ${type.service} (${type.phone}).`, life: 10000 });
   }
 
   protected sosDashOffset(): number {
@@ -590,6 +670,48 @@ export class ActiveTrip implements AfterViewInit, OnDestroy {
       summary: status === 'ABORDADO' ? 'Abordaje confirmado' : 'Alumno ausente',
       detail: `${child?.name || 'Alumno'} marcado como ${status === 'ABORDADO' ? 'abordado' : 'ausente'}.`,
       life: 2500,
+    });
+  }
+
+  // ── Delivery ─────────────────────────────────────────────────────────────
+  protected authorizedPersonsOf(childId: string) {
+    return this.stakeholderStore.authorizedPersonsOf(childId);
+  }
+
+  protected openHandover(child: { id: string; name: string }): void {
+    this.handoverChild = child;
+    this.receiverChoice = '';
+    this.unknownReceiverName = '';
+    this.handoverRef = this.dialog.open(this.handoverTpl(), { width: '440px', autoFocus: false });
+  }
+
+  protected closeHandover(): void {
+    this.handoverRef?.close();
+  }
+
+  protected async confirmHandover(): Promise<void> {
+    const trip = this.tripData();
+    const child = this.handoverChild;
+    if (!trip?.id || !child || !this.receiverChoice) return;
+    const unregistered = this.receiverChoice === NOT_REGISTERED;
+    this.saving.set(true);
+    const handover = await this.tripStore.recordHandover({
+      tripId: trip.id,
+      childId: child.id,
+      authorizedPersonId: unregistered ? null : this.receiverChoice,
+      receiverName: unregistered ? this.unknownReceiverName.trim() : undefined,
+    });
+    this.saving.set(false);
+    if (!handover) {
+      this.toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo registrar la entrega.' });
+      return;
+    }
+    this.closeHandover();
+    this.toast.add({
+      severity: handover.delivered ? 'success' : 'warn',
+      summary: handover.delivered ? 'Entrega registrada' : 'Alumno no entregado',
+      detail: `${handover.summary} Se avisó al padre.`,
+      life: 5000,
     });
   }
 

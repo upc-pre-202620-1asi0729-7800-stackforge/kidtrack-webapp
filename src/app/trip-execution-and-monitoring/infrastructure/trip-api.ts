@@ -3,10 +3,10 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { EntityId } from '../../shared/domain/model/base-entity';
 import { BaseApi } from '../../shared/infrastructure/base-api';
-import { IncidentResource, TripResource } from './trip.resources';
+import { HandoverRequest, HandoverResource, IncidentResource, TripResource } from './trip.resources';
 
 /**
- * Trip API Service: trip lifecycle, boarding progress and incident reports.
+ * Trip API Service: trip lifecycle, boarding progress, handovers, incidents and emergencies.
  */
 @Injectable({ providedIn: 'root' })
 export class TripApi extends BaseApi {
@@ -41,5 +41,25 @@ export class TripApi extends BaseApi {
 
   patchIncident(id: EntityId, partial: Partial<IncidentResource>): Observable<IncidentResource> {
     return this.incidents.patch(id, partial);
+  }
+
+  // ─── Emergencies ─────────────────────────────────────────────────────────
+  recordServiceCall(incidentId: EntityId): Observable<IncidentResource> {
+    return this.http.post<IncidentResource>(`${this.incidents.endpointUrl}/${incidentId}/service-calls`, {});
+  }
+
+  addIncidentUpdate(incidentId: EntityId, message: string, studentsSafe: boolean | null): Observable<IncidentResource> {
+    return this.http.post<IncidentResource>(`${this.incidents.endpointUrl}/${incidentId}/updates`, { message, studentsSafe });
+  }
+
+  // ─── Handovers ───────────────────────────────────────────────────────────
+  private readonly handovers = this.endpoint<HandoverResource>(environment.handoversEndpointPath);
+
+  getHandoversByOrganization(organizationId: string | null): Observable<HandoverResource[]> {
+    return this.handovers.getAll({ organizationId });
+  }
+
+  recordHandover(request: HandoverRequest): Observable<HandoverResource> {
+    return this.http.post<HandoverResource>(this.handovers.endpointUrl, request);
   }
 }

@@ -1,6 +1,7 @@
-import { Incident, IncidentSeverity, IncidentStatus, IncidentType } from '../domain/model/incident.entity';
+import { Handover, HandoverOutcome } from '../domain/model/handover.entity';
+import { EmergencyType, Incident, IncidentSeverity, IncidentStatus, IncidentType } from '../domain/model/incident.entity';
 import { Trip, TripStatus, TripType } from '../domain/model/trip.entity';
-import { IncidentResource, TripResource } from './trip.resources';
+import { HandoverResource, IncidentResource, TripResource } from './trip.resources';
 
 /** Maps trip resources to/from domain entities. */
 export class TripAssembler {
@@ -33,6 +34,7 @@ export class IncidentAssembler {
       type: (resource.type as IncidentType) || 'OTRO',
       severity: (resource.severity as IncidentSeverity) || 'LOW',
       status: (resource.status as IncidentStatus) || 'OPEN',
+      emergencyType: (resource.emergencyType as EmergencyType) ?? null,
     });
   }
 
@@ -43,5 +45,16 @@ export class IncidentAssembler {
   static toResourceFromEntity(incident: Incident): Omit<IncidentResource, 'id'> {
     const { id, ...resource } = { ...incident };
     return resource;
+  }
+}
+
+/** Maps handover resources to domain entities. */
+export class HandoverAssembler {
+  static toEntityFromResource(resource: HandoverResource): Handover {
+    return new Handover({ ...resource, outcome: resource.outcome as HandoverOutcome });
+  }
+
+  static toEntitiesFromResources(resources: HandoverResource[]): Handover[] {
+    return (resources ?? []).map(r => this.toEntityFromResource(r));
   }
 }

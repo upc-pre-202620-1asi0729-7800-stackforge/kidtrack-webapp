@@ -1,12 +1,13 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import { Route } from '../../fleet-and-route-planning/domain/model/route.entity';
 import { EntityId } from '../../shared/domain/model/base-entity';
+import { Handover } from '../domain/model/handover.entity';
 import { Incident } from '../domain/model/incident.entity';
 import { Trip } from '../domain/model/trip.entity';
 import { TripApi } from '../infrastructure/trip-api';
-import { IncidentAssembler, TripAssembler } from '../infrastructure/trip.assemblers';
-import { TripResource } from '../infrastructure/trip.resources';
+import { HandoverAssembler, IncidentAssembler, TripAssembler } from '../infrastructure/trip.assemblers';
+import { HandoverRequest, IncidentResource, TripResource } from '../infrastructure/trip.resources';
 
 export type AutoTripResult =
   | { status: 'created'; trip: Trip }
@@ -17,7 +18,8 @@ const sameId = (a: EntityId | null | undefined, b: EntityId | null | undefined) 
 const todayIso = () => new Date().toISOString().split('T')[0];
 
 /**
- * Signal store for real-time trip execution: trip state, boarding progress and incident log.
+ * Signal store for real-time trip execution: trip state, boarding progress, handovers,
+ * incident log and emergencies.
  */
 @Injectable({ providedIn: 'root' })
 export class TripStore {
@@ -25,6 +27,7 @@ export class TripStore {
 
   readonly trips = signal<Trip[]>([]);
   readonly incidents = signal<Incident[]>([]);
+  readonly handovers = signal<Handover[]>([]);
   readonly loading = signal(false);
   readonly errors = signal<unknown[]>([]);
 
@@ -132,12 +135,58 @@ export class TripStore {
     }
   }
 
-  async resolveIncident(id: EntityId): Promise<void> {
+  async resolveIncident(id: EntityId, resolution = ''): Promise<Incident | null> {
+    return this.saveIncident(this.api.patchIncident(id, { status: 'RESOLVED', resolution }));
+  }
+
+  // ─── Emergencies ─────────────────────────────────────────────────────────
+
+  openEmergencyOf(tripId: EntityId | null | undefined): Incident | null {
+    return this.incidents().find(i => i.isOpenEmergency && sameId(i.tripId, tripId)) ?? null;
+  }
+
+  recordServiceCall(incidentId: EntityId): Promise<Incident | null> {
+    return this.saveIncident(this.api.recordServiceCall(incidentId));
+  }
+
+  addIncidentUpdate(incidentId: EntityId, message: string, studentsSafe: boolean | null): Promise<Incident | null> {
+    return this.saveIncident(this.api.addIncidentUpdate(incidentId, message, studentsSafe));
+  }
+
+  // ─── Handovers ───────────────────────────────────────────────────────────
+
+  /** Latest handover record of a student on a trip. */
+  handoverOf(tripId: EntityId | null | undefined, childId: EntityId): Handover | null {
+    return this.handovers().filter(h => sameId(h.tripId, tripId) && sameId(h.childId, childId)).at(-1) ?? null;
+  }
+
+  async loadHandovers(organizationId: string | null): Promise<void> {
     try {
-      const saved = IncidentAssembler.toEntityFromResource(await firstValueFrom(this.api.patchIncident(id, { status: 'RESOLVED' })));
-      this.incidents.update(list => list.map(i => (sameId(i.id, saved.id) ? saved : i)));
+      this.handovers.set(HandoverAssembler.toEntitiesFromResources(await firstValueFrom(this.api.getHandoversByOrganization(organizationId))));
     } catch (error) {
       this.pushError(error);
+    }
+  }
+
+  async recordHandover(request: HandoverRequest): Promise<Handover | null> {
+    try {
+      const created = HandoverAssembler.toEntityFromResource(await firstValueFrom(this.api.recordHandover(request)));
+      this.handovers.update(list => [...list, created]);
+      return created;
+    } catch (error) {
+      this.pushError(error);
+      return null;
+    }
+  }
+
+  private async saveIncident(request: Observable<IncidentResource>): Promise<Incident | null> {
+    try {
+      const saved = IncidentAssembler.toEntityFromResource(await firstValueFrom(request));
+      this.incidents.update(list => list.map(i => (sameId(i.id, saved.id) ? saved : i)));
+      return saved;
+    } catch (error) {
+      this.pushError(error);
+      return null;
     }
   }
 

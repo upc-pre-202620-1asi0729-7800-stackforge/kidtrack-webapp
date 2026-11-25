@@ -6,8 +6,10 @@ import { Route } from '../../../../fleet-and-route-planning/domain/model/route.e
 import { IamStore } from '../../../../identity-and-access-management/application/iam.store';
 import { TranslatePipe } from '../../../../shared/i18n/translate.pipe';
 import { LIMA, MapService } from '../../../../shared/infrastructure/map.service';
+import { StakeholderStore } from '../../../../stakeholder-and-asset-management/application/stakeholder.store';
 import { TripStore } from '../../../application/trip.store';
 import { Trip } from '../../../domain/model/trip.entity';
+import { EmergencyPanel } from '../../components/emergency-panel/emergency-panel';
 
 const BUS_ICON = L.divIcon({
   html: `<div style="background:#E07A2B;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.35);border:3px solid #fff">
@@ -18,10 +20,12 @@ const BUS_ICON = L.divIcon({
   iconAnchor: [16, 16],
 });
 
-/** Admin's live monitoring view: trips list, bus position on the map and trip detail. */
+const REFRESH_MS = 10000;
+
+/** Admin's live monitoring view: open emergencies, trips list, bus position on the map and trip detail. */
 @Component({
   selector: 'kt-trip-monitoring',
-  imports: [MatButtonModule, TranslatePipe],
+  imports: [MatButtonModule, TranslatePipe, EmergencyPanel],
   templateUrl: './trip-monitoring.html',
   styleUrl: './trip-monitoring.css',
 })
@@ -30,17 +34,26 @@ export class TripMonitoring implements AfterViewInit, OnDestroy {
   private readonly iamStore = inject(IamStore);
   private readonly fleetStore = inject(FleetStore);
   protected readonly tripStore = inject(TripStore);
+  private readonly stakeholderStore = inject(StakeholderStore);
 
   protected readonly trips = this.tripStore.trips;
   protected readonly selected = signal<Trip | null>(null);
   protected readonly loading = signal(false);
   protected readonly orsLoading = signal(false);
   protected readonly selectedRoute = computed(() => this.routeFor(this.selected()));
+  protected readonly openEmergencies = computed(() => this.tripStore.incidents().filter(i => i.isOpenEmergency));
+  protected readonly selectedHandovers = computed(() => {
+    const id = this.selected()?.id;
+    return this.tripStore.handovers().filter(h => String(h.tripId) === String(id));
+  });
 
   private map: L.Map | null = null;
   private layers: L.Layer[] = [];
+  private refreshTimer: ReturnType<typeof setInterval> | undefined;
 
   async ngAfterViewInit(): Promise<void> {
+    void this.stakeholderStore.loadAll(this.iamStore.organizationId());
+    this.refreshTimer = setInterval(() => this.refreshAlerts(), REFRESH_MS);
     await this.loadData();
     this.map = this.mapService.createMap('trip-map');
     const trips = this.trips();
@@ -49,6 +62,7 @@ export class TripMonitoring implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    clearInterval(this.refreshTimer);
     this.map?.remove();
     this.map = null;
   }
@@ -57,12 +71,20 @@ export class TripMonitoring implements AfterViewInit, OnDestroy {
     this.loading.set(true);
     const orgId = this.iamStore.organizationId();
     await Promise.all([this.tripStore.loadTrips(orgId), this.fleetStore.loadRoutes(orgId)]);
+    this.refreshAlerts();
     this.loading.set(false);
     const current = this.selected();
     if (current) {
       const refreshed = this.trips().find(t => String(t.id) === String(current.id));
       if (refreshed) this.selectTrip(refreshed);
     }
+  }
+
+  /** Emergencies and handovers are reported by the drivers while this screen is open. */
+  private refreshAlerts(): void {
+    const orgId = this.iamStore.organizationId();
+    void this.tripStore.loadIncidents(orgId);
+    void this.tripStore.loadHandovers(orgId);
   }
 
   protected selectTrip(trip: Trip): void {

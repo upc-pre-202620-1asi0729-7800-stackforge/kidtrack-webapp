@@ -12,6 +12,14 @@
     </div>
   </div>
 
+  @if (openEmergencies().length) {
+    <div class="emergency-list">
+      @for (emergency of openEmergencies(); track emergency.id) {
+        <kt-emergency-panel [incident]="emergency" [canResolve]="true" />
+      }
+    </div>
+  }
+
   <div class="monitor-grid">
 
     <!-- Trip list -->
@@ -97,6 +105,19 @@
               </div>
             }
           </div>
+
+          <!-- Who received each student -->
+          @if (selectedHandovers().length) {
+            <div class="handovers">
+              <p class="wps-mini-title"><i class="pi pi-user-plus"></i> Entregas de alumnos</p>
+              @for (handover of selectedHandovers(); track handover.id) {
+                <p class="handover-row" [class.failed]="!handover.delivered">
+                  <strong>{{ formatTime(handover.recordedAt) }}</strong> {{ handover.summary }}
+                  @if (!handover.delivered && handover.receiverName) { (se presentó: {{ handover.receiverName }}) }
+                </p>
+              }
+            </div>
+          }
 
           <!-- Waypoints of the selected trip's route -->
           @if (selectedRoute()?.waypoints?.length) {

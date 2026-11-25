@@ -18,12 +18,14 @@ const ROUTE_PATH: LatLngTuple[] = [
 const HOME_POSITION = ROUTE_PATH[ROUTE_PATH.length - 1];
 const PROXIMITY_THRESHOLD_M = 500;
 const STEP_INTERVAL_MS = 4000;
+const REFRESH_MS = 10000;
 
 const distance = (a: LatLngTuple, b: LatLngTuple) => new Coordinates(a[0], a[1]).distanceTo(new Coordinates(b[0], b[1]));
 
 /**
  * Parent's tracking view: bus position relative to the family's stop, ETA,
- * proximity alert (US19) and arrival confirmation (US20).
+ * proximity alert (US19), arrival confirmation (US20), who received the student and
+ * the news of an emergency on the child's trip.
  */
 @Component({
   selector: 'kt-parent-tracking',
@@ -44,10 +46,40 @@ export class ParentTracking implements AfterViewInit, OnDestroy {
   protected readonly arrivalTime = signal<string | null>(null);
   protected readonly orsLoading = signal(false);
 
+  private readonly myChildren = computed(() => {
+    const parent = this.stakeholderStore.parentByEmail(this.iamStore.currentUser()?.email);
+    return parent ? this.stakeholderStore.childrenOf(parent.id) : [];
+  });
+
+  /** Open emergencies with one of the parent's children aboard. */
+  protected readonly emergencies = computed(() => {
+    const kids = this.myChildren();
+    return this.tripStore.incidents()
+      .filter(i => i.isOpenEmergency)
+      .map(incident => {
+        const aboard = kids.filter(c => incident.studentIds.includes(String(c.id)));
+        return {
+          incident,
+          names: aboard.map(c => c.name).join(' y '),
+          several: aboard.length > 1,
+          driver: this.tripStore.trips().find(t => String(t.id) === String(incident.tripId)),
+        };
+      })
+      .filter(e => e.names);
+  });
+
+  /** Who received the parent's children today, newest first. */
+  protected readonly handovers = computed(() => {
+    const kidIds = this.myChildren().map(c => String(c.id));
+    const today = new Date().toDateString();
+    return this.tripStore.handovers()
+      .filter(h => kidIds.includes(String(h.childId)) && new Date(h.recordedAt).toDateString() === today)
+      .reverse();
+  });
+
   /** Driver / vehicle of the trip that carries the parent's children (falls back to the demo values). */
   protected readonly busInfo = computed(() => {
-    const parent = this.stakeholderStore.parentByEmail(this.iamStore.currentUser()?.email);
-    const kidIds = parent ? this.stakeholderStore.childrenOf(parent.id).map(c => String(c.id)) : [];
+    const kidIds = this.myChildren().map(c => String(c.id));
     const trips = this.tripStore.trips().filter(t => t.studentIds.some(id => kidIds.includes(id)));
     const trip = trips.find(t => t.status === 'EN_ROUTE') ?? trips.find(t => t.status === 'SCHEDULED') ?? trips[0];
     return {
@@ -59,13 +91,16 @@ export class ParentTracking implements AfterViewInit, OnDestroy {
 
   protected readonly busStatus = computed(() =>
     this.arrivalConfirmed() ? 'COMPLETED' : this.busStepIdx() > 0 ? 'EN_ROUTE' : 'SCHEDULED');
-  protected readonly statusLabel = computed(() =>
-    ({ SCHEDULED: 'Programado', EN_ROUTE: 'En camino', COMPLETED: 'Llegó' })[this.busStatus()]);
-  protected readonly statusClass = computed(() => this.busStatus().toLowerCase().replace('_', '-'));
-  protected readonly statusIcon = computed(() =>
-    this.busStatus() === 'COMPLETED' ? 'pi pi-check-circle' : this.busStatus() === 'EN_ROUTE' ? 'pi pi-car' : 'pi pi-clock');
+  protected readonly statusLabel = computed(() => this.emergencies().length
+    ? 'Emergencia'
+    : ({ SCHEDULED: 'Programado', EN_ROUTE: 'En camino', COMPLETED: 'Llegó' })[this.busStatus()]);
+  protected readonly statusClass = computed(() =>
+    this.emergencies().length ? 'emergency' : this.busStatus().toLowerCase().replace('_', '-'));
+  protected readonly statusIcon = computed(() => this.emergencies().length ? 'pi pi-exclamation-triangle'
+    : this.busStatus() === 'COMPLETED' ? 'pi pi-check-circle' : this.busStatus() === 'EN_ROUTE' ? 'pi pi-car' : 'pi pi-clock');
 
   protected readonly etaLabel = computed(() => {
+    if (this.emergencies().length) return 'En pausa';
     if (this.arrivalConfirmed()) return this.arrivalTime();
     const mins = Math.round(((ROUTE_PATH.length - 1 - this.busStepIdx()) * STEP_INTERVAL_MS) / 60000);
     return mins <= 0 ? 'Llegando…' : `~${mins} min`;
@@ -89,11 +124,14 @@ export class ParentTracking implements AfterViewInit, OnDestroy {
   private busMarker: L.Marker | null = null;
   private routeLine: L.Polyline | null = null;
   private simTimer: ReturnType<typeof setInterval> | undefined;
+  private refreshTimer: ReturnType<typeof setInterval> | undefined;
 
   ngAfterViewInit(): void {
     const orgId = this.iamStore.organizationId();
     void this.tripStore.loadTrips(orgId);
     void this.stakeholderStore.loadAll(orgId);
+    this.refreshNews();
+    this.refreshTimer = setInterval(() => this.refreshNews(), REFRESH_MS);
     this.initMap();
     void this.loadRoadRoute();
     this.simTimer = setInterval(() => this.advanceBus(), STEP_INTERVAL_MS);
@@ -101,8 +139,19 @@ export class ParentTracking implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     clearInterval(this.simTimer);
+    clearInterval(this.refreshTimer);
     this.map?.remove();
     this.map = null;
+  }
+
+  protected time(iso: string | null): string {
+    return iso ? new Date(iso).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) : '';
+  }
+
+  private refreshNews(): void {
+    const orgId = this.iamStore.organizationId();
+    void this.tripStore.loadIncidents(orgId);
+    void this.tripStore.loadHandovers(orgId);
   }
 
   protected dismissProximity(): void {
@@ -145,6 +194,8 @@ export class ParentTracking implements AfterViewInit, OnDestroy {
   }
 
   private advanceBus(): void {
+    // The bus does not move on while there is an emergency.
+    if (this.emergencies().length) return;
     const next = this.busStepIdx() + 1;
     if (next >= ROUTE_PATH.length) {
       // US20 — Arrival confirmation

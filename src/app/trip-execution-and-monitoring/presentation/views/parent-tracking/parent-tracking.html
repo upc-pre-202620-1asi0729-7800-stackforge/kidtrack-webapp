@@ -15,8 +15,50 @@
     </div>
   </div>
 
+  <!-- Emergency on the child's trip: how the child is, who is with them and what is being done -->
+  @for (e of emergencies(); track e.incident.id) {
+    <section class="emergency-news" role="alert">
+      <h2><i class="pi pi-exclamation-triangle"></i> {{ e.incident.emergency?.label }}
+        @if (e.incident.location) { en {{ e.incident.location }} }
+      </h2>
+      <p>
+        @if (e.incident.studentsSafe === true) {
+          El conductor confirma que <strong>{{ e.names }}</strong> {{ e.several ? 'están' : 'está' }} bien.
+        } @else if (e.incident.studentsSafe === false) {
+          Estamos atendiendo a <strong>{{ e.names }}</strong>.
+        } @else {
+          Estamos confirmando el estado de <strong>{{ e.names }}</strong>.
+        }
+      </p>
+      @if (e.driver) { <p>A cargo del conductor {{ e.driver.driverName }}, vehículo {{ e.driver.vehiclePlate }}.</p> }
+      <p>
+        @if (e.incident.serviceContactedAt) {
+          <i class="pi pi-check-circle"></i> {{ e.incident.emergency?.service }} ({{ e.incident.servicePhone }}) fue contactado a las {{ time(e.incident.serviceContactedAt) }}
+        } @else {
+          Se está contactando a {{ e.incident.emergency?.service }} ({{ e.incident.servicePhone }}).
+        }
+      </p>
+      @if (e.incident.updates.length) {
+        <ul>
+          @for (update of e.incident.updates; track update.sentAt) {
+            <li><strong>{{ time(update.sentAt) }}</strong> {{ update.message }}</li>
+          }
+        </ul>
+      }
+      <p class="emergency-hint">Esta pantalla se actualiza sola. Le avisaremos cuando el caso se cierre.</p>
+    </section>
+  }
+
+  <!-- Who received the student -->
+  @for (handover of handovers(); track handover.id) {
+    <div class="handover-news" [class.failed]="!handover.delivered">
+      <i [class]="handover.delivered ? 'pi pi-verified' : 'pi pi-ban'"></i>
+      <span><strong>{{ time(handover.recordedAt) }}</strong> {{ handover.summary }}</span>
+    </div>
+  }
+
   <!-- US19 — Proximity Alert Banner -->
-  @if (proximityAlert() && !arrivalConfirmed()) {
+  @if (proximityAlert() && !arrivalConfirmed() && !emergencies().length) {
     <div class="proximity-alert slide-down">
       <div class="prox-icon"><i class="pi pi-bell"></i></div>
       <div class="prox-body">
@@ -35,8 +77,8 @@
     <div class="arrival-banner slide-down">
       <i class="pi pi-check-circle arrival-icon"></i>
       <div>
-        <p class="arrival-title">¡Tu hijo/a llegó a destino!</p>
-        <p class="arrival-msg">El bus llegó a las <strong>{{ arrivalTime() }}</strong>. Todos los alumnos fueron entregados correctamente.</p>
+        <p class="arrival-title">El bus llegó a destino</p>
+        <p class="arrival-msg">El bus llegó a las <strong>{{ arrivalTime() }}</strong>. Cuando se registre quién recibe a tu hijo/a lo verás aquí.</p>
       </div>
     </div>
   }
@@ -100,8 +142,16 @@
         <div class="alert-box success">
           <i class="pi pi-check-circle alert-icon"></i>
           <div>
-            <p class="alert-title">Servicio concluido</p>
-            <p class="alert-msg">Tu hijo/a fue entregado correctamente.</p>
+            <p class="alert-title">Recorrido concluido</p>
+            <p class="alert-msg">El bus completó su recorrido.</p>
+          </div>
+        </div>
+      } @else if (emergencies().length) {
+        <div class="alert-box warn">
+          <i class="pi pi-exclamation-triangle alert-icon"></i>
+          <div>
+            <p class="alert-title">Recorrido detenido</p>
+            <p class="alert-msg">Hay una emergencia en curso. Revisa las novedades arriba.</p>
           </div>
         </div>
       } @else if (proximityAlert()) {

@@ -1,0 +1,73 @@
+@if (incident(); as inc) {
+  <section class="emergency" [class.closed]="inc.status === 'RESOLVED'">
+    <header class="em-header">
+      <i [class]="inc.emergency?.icon ?? 'pi pi-exclamation-triangle'"></i>
+      <div>
+        <p class="em-title">{{ inc.status === 'OPEN' ? 'Emergencia en curso' : 'Emergencia cerrada' }}: {{ inc.emergency?.label }}</p>
+        <p class="em-sub">
+          {{ time(inc.timestamp) }}
+          @if (inc.location) { · {{ inc.location }} }
+          @if (inc.routeName) { · {{ inc.routeName }} }
+        </p>
+      </div>
+    </header>
+
+    <!-- Parents only read the panel: the names of other families' children are not shown to them. -->
+    @if (canAct()) {
+      <p class="em-line"><strong>A bordo:</strong> {{ studentNames() || '—' }}</p>
+    }
+    <p class="em-state" [class.safe]="inc.studentsSafe === true" [class.care]="inc.studentsSafe === false">
+      {{ inc.studentsStateLabel }}
+    </p>
+
+    <!-- External service -->
+    <div class="em-service">
+      <span class="em-service-name">{{ inc.emergency?.service }} · {{ inc.servicePhone }}</span>
+      @if (inc.serviceContactedAt) {
+        <span class="em-contacted"><i class="pi pi-check-circle"></i> Contactado {{ time(inc.serviceContactedAt) }} por {{ inc.serviceContactedBy }}</span>
+      } @else if (canAct() && inc.status === 'OPEN') {
+        <div class="em-service-actions">
+          <a class="em-call" [href]="'tel:' + inc.servicePhone"><i class="pi pi-phone"></i> Llamar</a>
+          <button mat-stroked-button class="small" [disabled]="busy()" (click)="recordCall()">Ya llamé: registrar</button>
+        </div>
+      } @else {
+        <span class="em-pending">Pendiente de contactar</span>
+      }
+    </div>
+
+    @if (inc.updates.length) {
+      <ul class="em-updates">
+        @for (update of inc.updates; track update.sentAt) {
+          <li><span class="em-time">{{ time(update.sentAt) }}</span> {{ update.message }}</li>
+        }
+      </ul>
+    }
+
+    @if (inc.status === 'RESOLVED') {
+      <p class="em-line"><strong>Cierre {{ time(inc.resolvedAt) }}:</strong> {{ inc.resolution || 'Sin observaciones' }}</p>
+    } @else if (canAct()) {
+      <div class="em-form">
+        <input type="text" maxlength="300" [(ngModel)]="message" placeholder="Novedad para los padres (p. ej. la ambulancia ya llegó)" />
+        <div class="em-form-row">
+          <select [(ngModel)]="studentsState">
+            <option value="UNCHANGED">Estado: sin cambios</option>
+            <option value="SAFE">Los alumnos están bien</option>
+            <option value="NEEDS_CARE">Requieren atención</option>
+          </select>
+          <button mat-flat-button class="small" [disabled]="busy() || !message.trim()" (click)="sendUpdate()">
+            <i class="pi pi-send"></i><span>Enviar a padres</span>
+          </button>
+        </div>
+      </div>
+
+      @if (canResolve()) {
+        <div class="em-form em-close">
+          <input type="text" maxlength="300" [(ngModel)]="resolution" placeholder="Resultado (p. ej. alumnos entregados a personas registradas)" />
+          <button mat-flat-button class="success small" [disabled]="busy() || !resolution.trim()" (click)="resolve()">
+            <i class="pi pi-check"></i><span>Cerrar emergencia</span>
+          </button>
+        </div>
+      }
+    }
+  </section>
+}

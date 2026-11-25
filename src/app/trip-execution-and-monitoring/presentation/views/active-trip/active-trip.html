@@ -114,7 +114,7 @@
       </div>
 
       <!-- RIGHT: stops panel -->
-      <div class="stops-col">
+      <div class="stops-col" [class.has-emergency]="openEmergency()">
         @if (!tripData()) {
           <div class="start-state">
             <i class="pi pi-hand-pointer start-icon"></i>
@@ -131,6 +131,12 @@
               <span class="sim-badge"><i class="pi pi-spin pi-spinner" style="font-size:0.7rem"></i> Simulando…</span>
             }
           </div>
+
+          @if (openEmergency(); as emergency) {
+            <div class="emergency-slot">
+              <kt-emergency-panel [incident]="emergency" />
+            </div>
+          }
 
           @if (isScheduled()) {
             <!-- SCHEDULED → start (US17: security checklist first) -->
@@ -178,12 +184,24 @@
                 <div class="boarding-list">
                   @for (child of boardingStudents(); track child.id) {
                     <div class="boarding-row">
-                      <span class="boarding-name">{{ child.name }}</span>
+                      <span class="boarding-name">
+                        {{ child.name }}
+                        @if (child.handover; as h) {
+                          <small class="handover-note" [class.failed]="!h.delivered">
+                            {{ h.delivered ? 'Recibe: ' + h.receiverName : 'No entregado' }}
+                          </small>
+                        }
+                      </span>
                       <div class="boarding-btns">
-                        <button class="b-btn aboard" [class.active]="child.mark === 'ABORDADO'" (click)="markBoarding(child.id, 'ABORDADO')">
+                        @if (!child.handover?.delivered && child.mark !== 'AUSENTE') {
+                          <button class="b-btn deliver" (click)="openHandover(child)" title="Registrar quién recibe">
+                            <i class="pi pi-user-plus"></i> Entregar
+                          </button>
+                        }
+                        <button class="b-btn aboard" [class.active]="child.mark === 'ABORDADO'" title="Abordó" (click)="markBoarding(child.id, 'ABORDADO')">
                           <i class="pi pi-check"></i>
                         </button>
-                        <button class="b-btn absent" [class.active]="child.mark === 'AUSENTE'" (click)="markBoarding(child.id, 'AUSENTE')">
+                        <button class="b-btn absent" [class.active]="child.mark === 'AUSENTE'" title="Ausente" (click)="markBoarding(child.id, 'AUSENTE')">
                           <i class="pi pi-times"></i>
                         </button>
                       </div>
@@ -207,13 +225,7 @@
               }
 
               <!-- US13 — SOS Panic Button -->
-              @if (sosActive()) {
-                <div class="sos-active-banner">
-                  <i class="pi pi-exclamation-triangle sos-blink"></i>
-                  <span>🚨 SOS ACTIVO — Central notificada</span>
-                  <button class="sos-cancel-btn" (click)="cancelSos()">Cancelar</button>
-                </div>
-              } @else {
+              @if (isEnRoute() && !openEmergency()) {
                 <div class="sos-hold-wrap">
                   <button class="sos-hold-btn w-full"
                           (mousedown)="sosStart()" (mouseup)="sosEnd()" (mouseleave)="sosEnd()"
@@ -262,6 +274,79 @@
     <button mat-button (click)="closeChecklist()">Cancelar</button>
     <button mat-flat-button [disabled]="!checklistComplete()" (click)="confirmChecklist()">
       <i class="pi pi-play"></i><span>Iniciar Viaje</span>
+    </button>
+  </div>
+</ng-template>
+
+<!-- Delivery — who receives the student -->
+<ng-template #handoverDialog>
+  <div class="kt-dialog-header"><h3>¿Quién recibe a {{ handoverChild?.name }}?</h3></div>
+  <div class="kt-dialog-body">
+    <p class="checklist-intro">Solo se puede entregar a una persona registrada. Pide su documento.</p>
+    <div class="choice-list">
+      @for (person of authorizedPersonsOf(handoverChild?.id ?? ''); track person.id) {
+        <label class="choice" [class.selected]="receiverChoice === person.id">
+          <input type="radio" name="receiver" [value]="person.id" [(ngModel)]="receiverChoice" />
+          <span><strong>{{ person.fullName }}</strong><small>{{ person.relationship }} · Doc. {{ person.documentNumber }}</small></span>
+        </label>
+      } @empty {
+        <p class="checklist-intro">Este alumno no tiene personas registradas.</p>
+      }
+      <label class="choice warn" [class.selected]="receiverChoice === notRegistered">
+        <input type="radio" name="receiver" [value]="notRegistered" [(ngModel)]="receiverChoice" />
+        <span><strong>La persona no está registrada</strong><small>No se entrega al alumno y se avisa al padre.</small></span>
+      </label>
+    </div>
+    @if (receiverChoice === notRegistered) {
+      <input class="kt-input" type="text" maxlength="150" [(ngModel)]="unknownReceiverName"
+             placeholder="Nombre de quien se presentó (opcional)" />
+    }
+  </div>
+  <div class="kt-dialog-footer">
+    <button mat-button (click)="closeHandover()">Cancelar</button>
+    <button mat-flat-button [class.danger]="receiverChoice === notRegistered" [disabled]="!receiverChoice || saving()" (click)="confirmHandover()">
+      <i class="pi pi-check"></i><span>{{ receiverChoice === notRegistered ? 'No entregar y avisar' : 'Confirmar entrega' }}</span>
+    </button>
+  </div>
+</ng-template>
+
+<!-- SOS — force majeure emergency -->
+<ng-template #emergencyDialog>
+  <div class="kt-dialog-header"><h3>🚨 ¿Qué está pasando?</h3></div>
+  <div class="kt-dialog-body">
+    <div class="choice-grid">
+      @for (type of emergencyTypes; track type.value) {
+        <label class="choice warn" [class.selected]="emergencyForm.type === type.value">
+          <input type="radio" name="emergencyType" [value]="type.value" [(ngModel)]="emergencyForm.type" />
+          <span><strong><i [class]="type.icon"></i> {{ type.label }}</strong><small>{{ type.service }} · {{ type.phone }}</small></span>
+        </label>
+      }
+    </div>
+
+    <label class="kt-label">Ubicación</label>
+    <input class="kt-input" type="text" maxlength="200" [(ngModel)]="emergencyForm.location" placeholder="¿Dónde están?" />
+
+    <label class="kt-label">Alumnos a bordo</label>
+    <div class="aboard-list">
+      @for (child of boardingStudents(); track child.id) {
+        <label><input type="checkbox" [(ngModel)]="emergencyForm.aboard[child.id]" /> {{ child.name }}</label>
+      }
+    </div>
+
+    <label class="kt-label">¿Cómo están los alumnos?</label>
+    <select class="kt-input" [(ngModel)]="emergencyForm.studentsState">
+      <option value="UNKNOWN">Aún no lo confirmo</option>
+      <option value="SAFE">Están bien</option>
+      <option value="NEEDS_CARE">Requieren atención</option>
+    </select>
+
+    <label class="kt-label">Detalle (opcional)</label>
+    <input class="kt-input" type="text" maxlength="500" [(ngModel)]="emergencyForm.detail" placeholder="Qué ocurrió" />
+  </div>
+  <div class="kt-dialog-footer">
+    <button mat-button (click)="closeEmergencyDialog()">Falsa alarma</button>
+    <button mat-flat-button class="danger" [disabled]="!emergencyForm.type || !hasStudentsAboard() || saving()" (click)="declareEmergency()">
+      <i class="pi pi-send"></i><span>Enviar alerta</span>
     </button>
   </div>
 </ng-template>

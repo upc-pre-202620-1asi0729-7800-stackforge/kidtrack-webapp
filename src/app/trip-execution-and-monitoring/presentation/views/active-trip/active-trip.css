@@ -167,14 +167,6 @@
 .sos-hold-btn:active, .sos-hold-btn:hover { background: #fee2e2; }
 .sos-ring { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; flex-shrink: 0; }
 .sos-icon { font-size: 0.85rem; }
-.sos-active-banner {
-  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
-  background: #fee2e2; border: 2px solid #DE4A26; border-radius: 10px;
-  padding: 0.6rem 0.85rem; font-size: 0.8rem; font-weight: 700; color: #DE4A26;
-}
-.sos-blink { animation: sosBlink 0.8s ease-in-out infinite; }
-@keyframes sosBlink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-.sos-cancel-btn { margin-left: auto; background: #DE4A26; color: #fff; border: none; border-radius: 6px; padding: 3px 10px; font-size: 0.72rem; font-weight: 700; cursor: pointer; font-family: inherit; }
 
 /* ── US17 Checklist Dialog ────────────────────────────────── */
 .checklist-intro { font-size: 0.85rem; color: var(--muted); margin: 0 0 1rem; }
@@ -222,3 +214,23 @@
   cursor: pointer; transition: background 0.15s; font-family: inherit;
 }
 .qr-scan-btn:hover { background: #dbeafe; }
+
+/* Delivery and emergencies */
+.emergency-slot { padding: 0.6rem 0.85rem; flex-shrink: 0; }
+.handover-note { display: block; color: #15803d; font-weight: 700; font-size: 0.68rem; }
+.handover-note.failed { color: #DE4A26; }
+.b-btn.deliver { width: auto; gap: 0.25rem; padding: 0 0.45rem; font-family: inherit; font-weight: 700; color: var(--navy); }
+.b-btn.deliver:hover { background: #e0f2fe; border-color: var(--navy); }
+.choice-list { display: flex; flex-direction: column; gap: 0.45rem; margin: 0.6rem 0; }
+.choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.45rem; }
+.choice { display: flex; gap: 0.55rem; align-items: flex-start; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 0.55rem 0.65rem; cursor: pointer; }
+.choice.selected { border-color: var(--navy); background: #f0f6ff; }
+.choice.warn.selected { border-color: #DE4A26; background: #fff1ee; }
+.choice span { display: flex; flex-direction: column; font-size: 0.82rem; color: var(--dark); }
+.choice small { color: var(--muted); }
+.kt-label { display: block; font-size: 0.75rem; font-weight: 700; color: var(--dark); margin: 0.7rem 0 0.25rem; }
+.kt-input { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 0.85rem; padding: 0.5rem 0.6rem; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; }
+.aboard-list { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; font-size: 0.82rem; color: var(--dark); }
+/* During an emergency the whole column scrolls, with the follow-up on top. */
+.stops-col.has-emergency { overflow-y: auto; }
+.stops-col.has-emergency .stop-list { flex: none; overflow: visible; }
