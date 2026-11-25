@@ -20,6 +20,16 @@ export interface ChildResource {
   organizationId: string | null;
 }
 
+export interface AuthorizedPersonResource {
+  id: EntityId;
+  childId: EntityId | null;
+  fullName: string;
+  documentNumber: string;
+  relationship: string;
+  phone: string;
+  organizationId: string | null;
+}
+
 export interface ProfileResource {
   id: EntityId;
   userId: string | null;

@@ -110,6 +110,7 @@
                         <th mat-header-cell *matHeaderCellDef class="col-actions"></th>
                         <td mat-cell *matCellDef="let c" class="col-actions">
                           <div class="row-actions">
+                            <button mat-icon-button class="kt-icon-btn" (click)="openAuthorized(c)" title="Personas autorizadas para recibir" aria-label="Personas autorizadas para recibir"><i class="pi pi-user-plus"></i></button>
                             <button mat-icon-button class="kt-icon-btn" (click)="openEditChild(c)"><i class="pi pi-pencil"></i></button>
                             <button mat-icon-button class="kt-icon-btn danger" (click)="deleteChild(c)"><i class="pi pi-trash"></i></button>
                           </div>
@@ -167,6 +168,7 @@
             <td mat-cell *matCellDef="let c" class="col-actions wide">
               <div class="row-actions">
                 <button mat-icon-button class="kt-icon-btn" (click)="showCarne(c)"><i class="pi pi-id-card"></i></button>
+                <button mat-icon-button class="kt-icon-btn" (click)="openAuthorized(c)" title="Personas autorizadas para recibir" aria-label="Personas autorizadas para recibir"><i class="pi pi-user-plus"></i></button>
                 <button mat-icon-button class="kt-icon-btn" (click)="openEditChild(c)"><i class="pi pi-pencil"></i></button>
                 <button mat-icon-button class="kt-icon-btn danger" (click)="deleteChild(c)"><i class="pi pi-trash"></i></button>
               </div>
@@ -487,5 +489,39 @@
       </div>
       <button mat-flat-button class="w-full mt-4" (click)="saveLog()"><i class="pi pi-check"></i><span>Guardar</span></button>
     </div>
+  </div>
+</ng-template>
+
+<!-- ── Authorized persons dialog ─────────────────────────── -->
+<ng-template #authorizedDialog>
+  <div class="kt-dialog-header">
+    <h3>Pueden recibir a {{ authorizedChild?.name }}</h3>
+    <button mat-icon-button (click)="closeDialog()" aria-label="Cerrar"><i class="pi pi-times"></i></button>
+  </div>
+  <div class="kt-dialog-body">
+    <div class="auth-list">
+      @for (person of store.authorizedPersonsOf(authorizedChild?.id ?? null); track person.id) {
+        <div class="auth-row">
+          <div>
+            <strong>{{ person.fullName }}</strong>
+            <small>{{ person.relationship }} · Doc. {{ person.documentNumber }}@if (person.phone) { · {{ person.phone }} }</small>
+          </div>
+          <button mat-icon-button class="kt-icon-btn danger" (click)="removeAuthorizedPerson(person)" aria-label="Quitar"><i class="pi pi-trash"></i></button>
+        </div>
+      } @empty {
+        <p class="auth-empty">Aún no hay personas registradas: el conductor no podrá entregar al alumno.</p>
+      }
+    </div>
+
+    <div class="auth-form">
+      <input type="text" maxlength="150" [(ngModel)]="personForm.fullName" placeholder="Nombre completo *" />
+      <input type="text" maxlength="20" [(ngModel)]="personForm.documentNumber" placeholder="Documento (DNI) *" />
+      <input type="text" maxlength="50" [(ngModel)]="personForm.relationship" placeholder="Parentesco *" />
+      <input type="text" maxlength="20" [(ngModel)]="personForm.phone" placeholder="Teléfono" />
+    </div>
+  </div>
+  <div class="kt-dialog-footer">
+    <button mat-button (click)="closeDialog()">Cerrar</button>
+    <button mat-flat-button (click)="addAuthorizedPerson()"><i class="pi pi-plus"></i><span>Registrar persona</span></button>
   </div>
 </ng-template>

@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { EntityId } from '../../shared/domain/model/base-entity';
 import { BaseApi } from '../../shared/infrastructure/base-api';
-import { ChildResource, ParentResource, ProfileResource } from './stakeholder.resources';
+import { AuthorizedPersonResource, ChildResource, ParentResource, ProfileResource } from './stakeholder.resources';
 
 /**
  * Infrastructure gateway for the Stakeholder bounded context.
@@ -43,6 +43,19 @@ export class StakeholderApi extends BaseApi {
   }
   deleteChild(id: EntityId): Observable<unknown> {
     return this.children.delete(id);
+  }
+
+  // ─── Authorized persons (who may receive a student) ─────────────────────
+  private readonly authorizedPersons = this.endpoint<AuthorizedPersonResource>(environment.authorizedPersonsEndpointPath);
+
+  getAuthorizedPersonsByOrganization(organizationId: string | null): Observable<AuthorizedPersonResource[]> {
+    return this.authorizedPersons.getAll({ organizationId });
+  }
+  createAuthorizedPerson(resource: Omit<AuthorizedPersonResource, 'id'>): Observable<AuthorizedPersonResource> {
+    return this.authorizedPersons.create(resource);
+  }
+  deleteAuthorizedPerson(id: EntityId): Observable<unknown> {
+    return this.authorizedPersons.delete(id);
   }
 
   // ─── Drivers (profiles with role=driver) ────────────────────────────────

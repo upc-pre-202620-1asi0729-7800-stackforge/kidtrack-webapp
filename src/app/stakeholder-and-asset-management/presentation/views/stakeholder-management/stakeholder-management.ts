@@ -16,6 +16,7 @@ import { ToastService } from '../../../../shared/application/toast.service';
 import { EntityId } from '../../../../shared/domain/model/base-entity';
 import { FullName } from '../../../../shared/domain/model/full-name';
 import { StakeholderStore } from '../../../application/stakeholder.store';
+import { AuthorizedPerson } from '../../../domain/model/authorized-person.entity';
 import { BOARDING_LABEL, BOARDING_SEVERITY, BoardingStatus, Child } from '../../../domain/model/child.entity';
 import { Driver } from '../../../domain/model/driver.entity';
 import { Parent } from '../../../domain/model/parent.entity';
@@ -28,6 +29,8 @@ interface ChildFormRow { id: EntityId | null; name: string; grade: string; activ
 interface ParentForm { id: EntityId | null; name: string; email: string; phone: string; active: boolean; password: string; formChildren: ChildFormRow[]; }
 interface ChildForm { id: EntityId | null; name: string; grade: string; parentId: EntityId | null; boardingStatus: BoardingStatus; active: boolean; hasPhoto: boolean; }
 interface LogForm { id: EntityId | null; nameOrPlate: string; licenseOrModel: string; vehicleId: EntityId | null; capacity: number; active: boolean; licenseVerified: boolean; }
+
+const emptyPersonForm = () => ({ fullName: '', documentNumber: '', relationship: '', phone: '' });
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -62,6 +65,7 @@ export class StakeholderManagement implements OnInit {
   private readonly childDialogTpl = viewChild.required<TemplateRef<unknown>>('childDialog');
   private readonly carneDialogTpl = viewChild.required<TemplateRef<unknown>>('carneDialog');
   private readonly logDrawerTpl = viewChild.required<TemplateRef<unknown>>('logDrawer');
+  private readonly authorizedDialogTpl = viewChild.required<TemplateRef<unknown>>('authorizedDialog');
   private dialogRef: MatDialogRef<unknown> | null = null;
 
   protected readonly boardingLabel = BOARDING_LABEL;
@@ -94,6 +98,8 @@ export class StakeholderManagement implements OnInit {
   protected childDialogTitle = 'Nuevo Alumno';
   protected readonly childHasPhoto = signal(false);
   protected carneData: Child | null = null;
+  protected authorizedChild: Child | null = null;
+  protected personForm = emptyPersonForm();
   protected logForm: LogForm = this.emptyLogForm();
   protected logDrawerTitle = 'Nuevo Conductor';
   protected readonly licenseVerified = signal(false);
@@ -106,6 +112,7 @@ export class StakeholderManagement implements OnInit {
 
     const orgId = this.iamStore.organizationId();
     void this.store.loadAll(orgId);
+    void this.store.loadAuthorizedPersons(orgId);
     void this.fleetStore.loadVehicles(orgId);
   }
 
@@ -316,6 +323,52 @@ export class StakeholderManagement implements OnInit {
   protected showCarne(child: Child): void {
     this.carneData = child;
     this.dialogRef = this.dialog.open(this.carneDialogTpl(), { width: '320px', autoFocus: false });
+  }
+
+  /* ══════════════ Authorized persons ══════════════ */
+  protected openAuthorized(child: Child): void {
+    this.authorizedChild = child;
+    this.personForm = emptyPersonForm();
+    this.dialogRef = this.dialog.open(this.authorizedDialogTpl(), { width: '480px', autoFocus: false });
+  }
+
+  protected async addAuthorizedPerson(): Promise<void> {
+    const child = this.authorizedChild;
+    const form = this.personForm;
+    if (!child) return;
+    if (!form.fullName.trim() || !form.documentNumber.trim() || !form.relationship.trim()) {
+      this.toast.add({ severity: 'error', summary: 'Error', detail: 'Completa nombre, documento y parentesco.' });
+      return;
+    }
+    const duplicated = this.store.authorizedPersonsOf(child.id)
+      .some(p => p.documentNumber === form.documentNumber.trim());
+    if (duplicated) {
+      this.toast.add({ severity: 'error', summary: 'Error', detail: 'Ese documento ya está registrado para el alumno.' });
+      return;
+    }
+    const added = await this.store.addAuthorizedPerson(new AuthorizedPerson({
+      ...form, childId: child.id, organizationId: this.iamStore.organizationId(),
+    }));
+    if (!added) {
+      this.toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo registrar a la persona.' });
+      return;
+    }
+    this.personForm = emptyPersonForm();
+    this.toast.add({ severity: 'success', summary: 'Registrado', detail: 'La persona ya puede recibir al alumno.' });
+  }
+
+  protected removeAuthorizedPerson(person: AuthorizedPerson): void {
+    this.confirm.require({
+      message: `¿Quitar a ${person.fullName} de las personas autorizadas?`,
+      header: 'Confirmar eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptSeverity: 'danger',
+      accept: async () => {
+        if (await this.store.removeAuthorizedPerson(person)) {
+          this.toast.add({ severity: 'warn', summary: 'Eliminado', detail: `${person.fullName} ya no puede recibir al alumno.` });
+        }
+      },
+    });
   }
 
   /* ══════════════ Logistics (drivers / fleet) ══════════════ */

@@ -142,3 +142,12 @@ tr.detail-row.collapsed td { border-bottom-width: 0; padding: 0; }
 .carne-name { margin: 1rem 0 0.5rem; color: var(--dark); }
 .carne-grade { margin: 0 0 1rem; color: var(--muted); }
 .carne-tag { width: 100%; box-sizing: border-box; padding: 0.45rem; }
+
+/* Authorized persons */
+.auth-list { display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 0.9rem; }
+.auth-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; border: 1px solid #e5e7eb; border-radius: 10px; padding: 0.5rem 0.7rem; }
+.auth-row strong { display: block; color: var(--dark); font-size: 0.88rem; }
+.auth-row small { color: var(--muted); font-size: 0.76rem; }
+.auth-empty { color: #b45309; font-size: 0.85rem; }
+.auth-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
+.auth-form input { font-family: inherit; font-size: 0.85rem; padding: 0.5rem 0.6rem; border: 1px solid #d1d5db; border-radius: 8px; min-width: 0; }

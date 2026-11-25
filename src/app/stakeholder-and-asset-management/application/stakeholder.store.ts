@@ -1,11 +1,14 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { EntityId } from '../../shared/domain/model/base-entity';
+import { AuthorizedPerson } from '../domain/model/authorized-person.entity';
 import { BoardingStatus, Child } from '../domain/model/child.entity';
 import { Driver } from '../domain/model/driver.entity';
 import { Parent } from '../domain/model/parent.entity';
 import { StakeholderApi } from '../infrastructure/stakeholder-api';
-import { ChildAssembler, DriverAssembler, ParentAssembler } from '../infrastructure/stakeholder.assemblers';
+import {
+  AuthorizedPersonAssembler, ChildAssembler, DriverAssembler, ParentAssembler,
+} from '../infrastructure/stakeholder.assemblers';
 
 const sameId = (a: EntityId | null | undefined, b: EntityId | null | undefined) => a !== null && a !== undefined && String(a) === String(b);
 
@@ -20,6 +23,7 @@ export class StakeholderStore {
   readonly parents = signal<Parent[]>([]);
   readonly children = signal<Child[]>([]);
   readonly drivers = signal<Driver[]>([]);
+  readonly authorizedPersons = signal<AuthorizedPerson[]>([]);
   readonly loaded = signal(false);
   readonly errors = signal<unknown[]>([]);
 
@@ -135,6 +139,47 @@ export class StakeholderStore {
       this.children.update(list => list.map(c => (sameId(c.id, saved.id) ? saved : c)));
     } catch (error) {
       this.pushError(error);
+    }
+  }
+
+  // ─── Authorized persons ──────────────────────────────────────────────────
+
+  authorizedPersonsOf(childId: EntityId | null): AuthorizedPerson[] {
+    return this.authorizedPersons().filter(p => sameId(p.childId, childId));
+  }
+
+  /** Only administrators and drivers may read them, so they are loaded apart from `loadAll`. */
+  async loadAuthorizedPersons(organizationId: string | null): Promise<void> {
+    try {
+      this.authorizedPersons.set(AuthorizedPersonAssembler.toEntitiesFromResources(
+        await firstValueFrom(this.api.getAuthorizedPersonsByOrganization(organizationId)),
+      ));
+    } catch (error) {
+      this.pushError(error);
+    }
+  }
+
+  async addAuthorizedPerson(person: AuthorizedPerson): Promise<boolean> {
+    try {
+      const saved = AuthorizedPersonAssembler.toEntityFromResource(await firstValueFrom(
+        this.api.createAuthorizedPerson(AuthorizedPersonAssembler.toResourceFromEntity(person)),
+      ));
+      this.authorizedPersons.update(list => [...list, saved]);
+      return true;
+    } catch (error) {
+      this.pushError(error);
+      return false;
+    }
+  }
+
+  async removeAuthorizedPerson(person: AuthorizedPerson): Promise<boolean> {
+    try {
+      await firstValueFrom(this.api.deleteAuthorizedPerson(person.id!));
+      this.authorizedPersons.update(list => list.filter(p => !sameId(p.id, person.id)));
+      return true;
+    } catch (error) {
+      this.pushError(error);
+      return false;
     }
   }
 

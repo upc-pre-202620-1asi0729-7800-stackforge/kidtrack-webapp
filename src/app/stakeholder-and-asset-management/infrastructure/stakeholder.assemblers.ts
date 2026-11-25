@@ -1,8 +1,9 @@
 import { FullName } from '../../shared/domain/model/full-name';
+import { AuthorizedPerson } from '../domain/model/authorized-person.entity';
 import { BoardingStatus, Child } from '../domain/model/child.entity';
 import { Driver } from '../domain/model/driver.entity';
 import { Parent } from '../domain/model/parent.entity';
-import { ChildResource, ParentResource, ProfileResource } from './stakeholder.resources';
+import { AuthorizedPersonResource, ChildResource, ParentResource, ProfileResource } from './stakeholder.resources';
 
 /** Maps parent resources to/from domain entities. */
 export class ParentAssembler {
@@ -41,6 +42,22 @@ export class ChildAssembler {
       name: child.name, grade: child.grade, parentId: child.parentId, status: child.active,
       boardingStatus: child.boardingStatus, hasPhoto: child.hasPhoto, organizationId: child.organizationId,
     };
+  }
+}
+
+/** Maps authorized person resources to/from domain entities. */
+export class AuthorizedPersonAssembler {
+  static toEntityFromResource(resource: AuthorizedPersonResource): AuthorizedPerson {
+    return new AuthorizedPerson({ ...resource, phone: resource.phone ?? '' });
+  }
+
+  static toEntitiesFromResources(resources: AuthorizedPersonResource[]): AuthorizedPerson[] {
+    return (resources ?? []).map(r => this.toEntityFromResource(r));
+  }
+
+  static toResourceFromEntity(person: AuthorizedPerson): Omit<AuthorizedPersonResource, 'id'> {
+    const { id, ...resource } = { ...person };
+    return resource;
   }
 }
 

@@ -20,6 +20,8 @@ export const environment = {
   tripsEndpointPath: '/trips',
   incidentsEndpointPath: '/incidents',
   notificationsEndpointPath: '/notifications',
+  authorizedPersonsEndpointPath: '/authorized-persons',
+  handoversEndpointPath: '/handovers',
 
   // OpenRouteService — https://openrouteservice.org
   orsBaseUrl: 'https://api.openrouteservice.org',
